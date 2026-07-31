@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Form Penginputan Material</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .dropdown-content { max-height: 250px; overflow-y: auto; }
+        .glass-effect { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #c1c1c1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="text-gray-800 antialiased min-h-screen pb-12">
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+        <div class="glass-effect rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-8 sm:px-10 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-3xl font-bold tracking-tight">Formulir Inventory</h1>
+                        <p class="mt-2 text-blue-100 text-sm sm:text-base">Input data aktual material, penyimpanan, dan dokumentasi stok.</p>
+                    </div>
+                    <div class="hidden sm:block">
+                        <i class="fa-solid fa-boxes-stacked text-5xl opacity-80"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="px-6 py-8 sm:px-10">
+                <form id="inventoryForm" onsubmit="handleSubmit(event)" class="space-y-8">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Tanggal Eksekusi</label>
+                            <input type="date" id="tanggal" required class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-gray-50">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Jam</label>
+                            <input type="time" id="jam" required class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-gray-50">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Pelaksana</label>
+                            <input type="text" id="pelaksana" required placeholder="Nama petugas" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-gray-50">
+                        </div>
+                    </div>
+
+                    <hr class="border-gray-200">
+
+                    <div class="bg-blue-50 rounded-xl p-5 border border-blue-100 relative">
+                        <h3 class="text-lg font-semibold text-blue-800 mb-4 flex items-center">
+                            <i class="fa-solid fa-magnifying-glass mr-2"></i> Pencarian Material
+                        </h3>
+                        
+                        <div class="relative">
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Ketik Kode Material / Deskripsi / Part Number / Bin</label>
+                            <div class="flex items-center gap-3">
+                                <div class="relative flex-1">
+                                    <input type="text" id="material" placeholder="Memuat data dari server..." disabled autocomplete="off"
+                                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors shadow-sm text-lg disabled:bg-gray-200 disabled:cursor-not-allowed">
+                                    <div id="materialClear" class="absolute right-3 top-3.5 text-gray-400 hover:text-red-500 cursor-pointer hidden">
+                                        <i class="fa-solid fa-circle-xmark text-xl"></i>
+                                    </div>
+                                </div>
+                                <div id="loadingIndicator" class="flex items-center text-blue-600 text-sm font-semibold">
+                                    <div class="loader mr-2"></div> Menyiapkan Data...
+                                </div>
+                            </div>
+                            
+                            <!-- Dropdown Autocomplete -->
+                            <div id="materialDropdown" class="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-xl hidden dropdown-content">
+                                <!-- Isi dropdown dari JS -->
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-5">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Material Description</label>
+                                <textarea id="materialDescription" rows="2" readonly class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-100 text-gray-600 focus:outline-none"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Part Number</label>
+                                <input type="text" id="partNumber" readonly class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-100 text-gray-600 focus:outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800 border-l-4 border-blue-500 pl-3">Informasi Stok & Hasil Aktual</h3>
+                        </div>
+                        
+                        <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                            <div class="overflow-x-auto custom-scrollbar">
+                                <div class="min-w-[900px] p-4">
+                                    <!-- Header Tabel grid 8 kolom -->
+                                    <div class="grid grid-cols-8 gap-2 mb-3 pb-2 border-b-2 border-gray-200 font-semibold text-sm text-gray-600 text-center">
+                                        <div>SLoc</div>
+                                        <div>Bin</div>
+                                        <div>Batch</div>
+                                        <div>Qty Sistem</div>
+                                        <div>UoM</div>
+                                        <div>Type</div>
+                                        <div class="text-blue-600">Hasil Aktual</div>
+                                        <div>Selisih</div>
+                                    </div>
+                                    
+                                    <!-- Container Baris Stok -->
+                                    <div id="stockRowsContainer" class="space-y-2">
+                                        <div class="text-center py-6 text-gray-400 italic text-sm border-2 border-dashed border-gray-200 rounded-lg">
+                                            Silakan cari dan pilih material di atas untuk memunculkan data stok.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-5 rounded-xl border border-gray-200 space-y-6">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Alokasi Penempatan</label>
+                            <select id="alokasi" class="w-full md:w-1/2 px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                                <option value="">-- Pilih Alokasi --</option>
+                                <option value="Kontainer 1">Kontainer 1</option>
+                                <option value="Kontainer 2">Kontainer 2</option>
+                                <option value="Kontainer 3">Kontainer 3</option>
+                                <option value="Kontainer 4">Kontainer 4</option>
+                                <option value="Kontainer 5">Kontainer 5</option>
+                            </select>
+                        </div>
+
+                        <hr class="border-gray-200">
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Tindakan Khusus</label>
+                                <select id="tindakan" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                                    <option value="">-- Tidak ada --</option>
+                                    <option value="Pemindahan Bin">Pemindahan Bin</option>
+                                    <option value="Penyesuaian Stok (Minus)">Penyesuaian Stok (Minus)</option>
+                                    <option value="Penyesuaian Stok (Plus)">Penyesuaian Stok (Plus)</option>
+                                    <option value="Barang Rusak/Karantina">Barang Rusak / Karantina</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Bukti Dokumentasi (Foto)</label>
+                                <div class="flex items-center justify-center w-full">
+                                    <label for="dokumentasi" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-white hover:bg-gray-50 transition-colors">
+                                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                            <i class="fa-solid fa-cloud-arrow-up text-3xl text-gray-400 mb-2"></i>
+                                            <p class="text-sm text-gray-500 font-semibold" id="fileNameDisplay">Klik untuk upload foto</p>
+                                        </div>
+                                        <input id="dokumentasi" type="file" accept="image/*" class="hidden" onchange="handleFileUpload(event)" />
+                                    </label>
+                                </div>
+                                <input type="hidden" id="dokumentasiBase64">
+                                <input type="hidden" id="dokumentasiMimeType">
+                                <input type="hidden" id="dokumentasiFilename">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pt-4 border-t border-gray-200">
+                        <button type="submit" id="submitBtn" class="w-full flex justify-center items-center py-3.5 px-4 border border-transparent rounded-xl shadow-sm text-base font-bold text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all">
+                            <i class="fa-solid fa-paper-plane mr-2"></i> Simpan Data Inventory
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const now = new Date();
+        document.getElementById('tanggal').value = now.toISOString().split('T')[0];
+        document.getElementById('jam').value = now.toTimeString().split(' ')[0].slice(0,5);
+        
+        const URL_WEB_APP = "https://script.google.com/macros/s/AKfycbyTfTcHIwyUjQdg5FF21I-6pjxCsnixQ2saYrp642DO9QjvpOHru32Zi5nmYSVYjy12/exec";
+        let masterDataMap = new Map();
+        const materialInput = document.getElementById('material');
+        const dropdown = document.getElementById('materialDropdown');
+        const clearBtn = document.getElementById('materialClear');
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchMasterData();
+        });
+
+        function fetchMasterData() {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(function(responseStr) {
+                        try {
+                            const response = JSON.parse(responseStr);
+                            if (response.status === "success") {
+                                processMasterData(response.sheet1); 
+                                unlockSearchInput("Cari Material, Deskripsi, Part Number, atau Bin...");
+                            } else {
+                                Swal.fire("Gagal", "Gagal mengambil data master: " + response.message, "error");
+                            }
+                        } catch(e) {
+                            console.error(e);
+                        }
+                    })
+                    .getMasterData();
+            } else {
+                // DATA DUMMY (KHUSUS PREVIEW DI SINI AGAR ANDA BISA MENGETES FITURNYA)
+                console.warn("Menjalankan Mode Preview Lokal.");
+                const dummyData = [
+                    ["MATERIAL", "DESC", "PART", "SLOC", "BIN", "BATCH", "QTY", "UOM", "TYPE"],
+                    ["101234", "Baut Baja M8 Panjang 20mm", "PN-001X", "GUD1", "A-01-B1", "B01", "150", "PCS", "SPAREPART"],
+                    ["101234", "Baut Baja M8 Panjang 20mm", "PN-001X", "GUD1", "A-01-B2", "B02", "50", "PCS", "SPAREPART"],
+                    ["225577", "Bearing Mesin 6204", "PN-BRG-2", "GUD2", "C-05-A1", "", "12", "PCS", "SPAREPART"],
+                    ["889900", "Oli Pelumas Mesin 10W-40", "OLI-10W", "GUD3", "D-10-X1", "B99", "5", "L", "CONSUMABLE"]
+                ];
+                processMasterData(dummyData);
+                unlockSearchInput("Mode Preview Aktif - Ketik 'Baut' atau 'Bearing' atau '101234'...");
+            }
+        }
+
+        function unlockSearchInput(placeholderText) {
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            if (materialInput) {
+                materialInput.disabled = false;
+                materialInput.placeholder = placeholderText;
+            }
+            if (loadingIndicator) {
+                loadingIndicator.innerHTML = '<i class="fa-solid fa-check text-green-500 text-lg mr-1"></i> <span class="text-green-600">Data Siap</span>';
+                setTimeout(() => { loadingIndicator.style.display = 'none'; }, 2000);
+            }
+        }
+
+        function processMasterData(jsonArray) {
+            masterDataMap.clear();
+            
+            const addMaterialToMap = (matCode, partNum, desc, uom, type, sloc, bin, batch, unrest) => {
+                if (!matCode) return;
+                const info = {
+                    partNum: partNum || '-', desc: desc || '-', uom: uom || '-', type: type || '-',
+                    locations: [{ sloc: sloc || '-', bin: bin || '-', batch: batch || '-', unrest: unrest || '0' }]
+                };
+                
+                const updateIfExists = (key) => {
+                    if (masterDataMap.has(key)) {
+                        let existingLocs = masterDataMap.get(key).locations;
+                        // Mencegah duplikasi data lokasi yang sama persis
+                        let isDuplicate = existingLocs.some(l => l.sloc === info.locations[0].sloc && l.bin === info.locations[0].bin && l.batch === info.locations[0].batch);
+                        if(!isDuplicate) {
+                            existingLocs.push(info.locations[0]);
+                        }
+                    } else {
+                        masterDataMap.set(key, JSON.parse(JSON.stringify(info)));
+                    }
+                };
+
+                updateIfExists(matCode);
+                const cleanMatCode = matCode.replace(/^0+/, '');
+                if (cleanMatCode !== matCode) updateIfExists(cleanMatCode);
+            };
+
+            if (jsonArray && jsonArray.length > 0) {
+                let headerRowIndex = -1;
+                let headers = [];
+
+                // PERBAIKAN: Deteksi header diperluas hingga baris 50 dan kosa kata diperbanyak
+                for (let i = 0; i < Math.min(50, jsonArray.length); i++) {
+                    const row = jsonArray[i];
+                    if (!row || !Array.isArray(row)) continue;
+                    
+                    const hasMaterialHeader = row.some(cell => {
+                        const cellStr = String(cell || '').trim().toUpperCase();
+                        return ['MATERIAL', 'MATNR', 'KODE', 'MATERIAL NUMBER', 'MATERIAL_NO', 'KODE BARANG', 'KODE MATERIAL'].includes(cellStr);
+                    });
+                    
+                    if (hasMaterialHeader) {
+                        headerRowIndex = i;
+                        headers = row.map(h => String(h || '').trim().toUpperCase());
+                        break;
+                    }
+                }
+
+                if (headerRowIndex !== -1) {
+                    for (let i = headerRowIndex + 1; i < jsonArray.length; i++) {
+                        const row = jsonArray[i];
+                        if (!row || row.length === 0) continue;
+                        
+                        let matCode = "", partNum = "", desc = "", uom = "", type = "";
+                        let sloc = "", bin = "", batch = "", unrest = "";
+                        
+                        headers.forEach((header, index) => {
+                            const val = row[index] !== undefined && row[index] !== null ? String(row[index]).trim() : "";
+                            if (!val) return; // Lewati cell kosong agar tidak menimpa data yang mungkin ada
+
+                            const h = header;
+                            
+                            // Logika pendeteksian kolom SUPER CERDAS (Mencakup SAP MB52 & manual Excel)
+                            if (h === 'MATERIAL' || h === 'MATNR' || h.includes('KODE MATERIAL') || h.includes('MATERIAL NUMBER') || h === 'KODE BARANG' || h === 'MATERIAL_NO') matCode = val;
+                            else if (h.includes('DESC') || h.includes('DESK') || h.includes('MAKTX') || h === 'MATERIAL DESCRIPTION' || h === 'NAMA BARANG' || h === 'TEXT' || h === 'NAMA') desc = val;
+                            else if (h.includes('PART') || h === 'PN' || h.includes('MFRPN') || h.includes('NOMOR PART') || h === 'NO PART' || h === 'PART NUMBER') partNum = val;
+                            else if (h === 'SLOC' || h === 'LGORT' || h.includes('LOKASI') || h === 'PLNT' || h === 'PLANT' || h.includes('STORAGE LOC') || h === 'GUDANG' || h === 'SL') sloc = val;
+                            else if (h.includes('BIN') || h === 'LGPBE' || h.includes('RAK') || h.includes('STORAGE BIN') || h === 'BIN LOCATION') { if(!bin) bin = val; }
+                            else if (h.includes('BATCH') || h === 'CHARG' || h === 'LOT' || h === 'NO BATCH') batch = val;
+                            else if (h.includes('UNRESTRICTED') || h.includes('QTY') || h.includes('STOK') || h === 'LABST' || h.includes('SIS') || h === 'STOCK' || h === 'JUMLAH' || h === 'SISA') { if(!unrest) unrest = val; }
+                            else if (h === 'BUN' || h === 'UOM' || h === 'OUM' || h.includes('UNIT') || h.includes('SATUAN') || h === 'MEINS' || h === 'UOM/BUN') uom = val;
+                            else if (h.includes('TYPE') || h === 'MTART' || h === 'MTYP' || h.includes('TIPE') || h === 'JENIS' || h === 'MATERIAL TYPE') type = val;
+                        });
+                        
+                        if (matCode) {
+                            addMaterialToMap(matCode, partNum, desc, uom, type, sloc, bin, batch, unrest);
+                        }
+                    }
+                }
+            }
+        }
+
+        if(materialInput && dropdown) {
+            materialInput.addEventListener('input', function() {
+                const val = this.value.trim().toUpperCase();
+                dropdown.innerHTML = '';
+                
+                if(val.length > 0) { clearBtn.classList.remove('hidden'); } 
+                else {
+                    clearBtn.classList.add('hidden');
+                    dropdown.classList.add('hidden');
+                    clearAutoFill();
+                    return;
+                }
+
+                if (val.length < 2) return; 
+
+                let matches = [];
+                for (const [key, info] of masterDataMap.entries()) {
+                    let hasMatchInBin = info.locations.some(loc => String(loc.bin || '').toUpperCase().includes(val));
+                    let hasMatchInDesc = String(info.desc || '').toUpperCase().includes(val);
+                    let hasMatchInPN = String(info.partNum || '').toUpperCase().includes(val);
+
+                    if (key.toUpperCase().includes(val) || hasMatchInDesc || hasMatchInPN || hasMatchInBin) {
+                        matches.push({ key: key, info: info });
+                        if(matches.length >= 30) break;
+                    }
+                }
+
+                if (matches.length > 0) {
+                    matches.forEach(match => {
+                        const div = document.createElement('div');
+                        div.className = "px-4 py-3 border-b border-gray-100 hover:bg-blue-50 cursor-pointer transition-colors";
+                        div.innerHTML = `<div class="font-bold text-gray-800">${match.key} <span class="text-xs font-normal text-gray-500 ml-2">PN: ${match.info.partNum || '-'}</span></div>
+                                         <div class="text-sm text-gray-600 truncate">${match.info.desc}</div>`;
+                        div.addEventListener('click', function() {
+                            materialInput.value = match.key;
+                            dropdown.classList.add('hidden');
+                            fillAutoData(match.key, match.info);
+                        });
+                        dropdown.appendChild(div);
+                    });
+                    dropdown.classList.remove('hidden');
+                } else {
+                    dropdown.classList.add('hidden');
+                }
+            });
+        }
+
+        if(clearBtn) {
+            clearBtn.addEventListener('click', function() {
+                materialInput.value = '';
+                this.classList.add('hidden');
+                dropdown.classList.add('hidden');
+                clearAutoFill();
+            });
+        }
+
+        document.addEventListener('click', function(e) {
+            if (materialInput && dropdown && e.target !== materialInput && e.target !== dropdown) {
+                dropdown.classList.add('hidden');
+            }
+        });
+
+        function clearAutoFill() {
+            document.getElementById('materialDescription').value = '';
+            document.getElementById('partNumber').value = '';
+            const container = document.getElementById('stockRowsContainer');
+            if(container) {
+                container.innerHTML = `<div class="text-center py-6 text-gray-400 italic text-sm border-2 border-dashed border-gray-200 rounded-lg">Silakan cari dan pilih material di atas untuk memunculkan data stok.</div>`;
+            }
+        }
+
+        function fillAutoData(key, info) {
+            document.getElementById('materialDescription').value = info.desc;
+            document.getElementById('partNumber').value = info.partNum;
+            renderStockRows(info);
+        }
+
+        function renderStockRows(info) {
+            const container = document.getElementById('stockRowsContainer');
+            if(!container) return;
+            container.innerHTML = '';
+            
+            if (!info.locations || info.locations.length === 0) {
+                container.innerHTML = `<div class="text-center py-4 text-red-500 text-sm">Tidak ada data penyimpanan (Bin/Sloc) untuk material ini.</div>`;
+                return;
+            }
+
+            info.locations.forEach((loc, index) => {
+                const rowHtml = `
+                    <div class="grid grid-cols-8 gap-2 items-center bg-gray-50 p-2 rounded-lg border border-gray-200 hover:border-blue-300 transition-colors">
+                        <div><input type="text" name="sloc[]" value="${loc.sloc}" readonly class="w-full px-2 py-1.5 text-sm bg-transparent border-0 focus:ring-0 text-center"></div>
+                        <div><input type="text" name="bin[]" value="${loc.bin}" readonly class="w-full px-2 py-1.5 text-sm bg-transparent border-0 focus:ring-0 text-center font-semibold text-gray-800"></div>
+                        <div><input type="text" name="batch[]" value="${loc.batch}" readonly class="w-full px-2 py-1.5 text-sm bg-transparent border-0 focus:ring-0 text-center"></div>
+                        <div><input type="text" name="unrest[]" value="${loc.unrest}" readonly class="qty-sistem w-full px-2 py-1.5 text-sm bg-transparent border-0 focus:ring-0 text-center font-bold text-gray-700"></div>
+                        <div><input type="text" name="uom[]" value="${info.uom}" readonly class="w-full px-2 py-1.5 text-sm bg-transparent border-0 focus:ring-0 text-center text-gray-500"></div>
+                        <div><input type="text" name="type[]" value="${info.type}" readonly class="w-full px-2 py-1.5 text-sm bg-transparent border-0 focus:ring-0 text-center text-gray-500"></div>
+                        <div><input type="number" step="0.01" name="aktual[]" placeholder="Isi Aktual" required oninput="calculateSelisih(this)" class="w-full px-2 py-1.5 text-sm bg-white border border-blue-300 rounded focus:ring-1 focus:ring-blue-500 text-center shadow-inner font-bold text-blue-700"></div>
+                        <div><input type="text" name="selisih[]" readonly class="qty-selisih w-full px-2 py-1.5 text-sm bg-transparent border-0 focus:ring-0 text-center font-bold"></div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', rowHtml);
+            });
+        }
+
+        window.calculateSelisih = function(inputElement) {
+            const row = inputElement.closest('.grid');
+            const qtySistemInput = row.querySelector('.qty-sistem');
+            const qtySelisihInput = row.querySelector('.qty-selisih');
+            
+            const sysVal = parseFloat(qtySistemInput.value) || 0;
+            const actVal = parseFloat(inputElement.value);
+            
+            if (isNaN(actVal)) {
+                qtySelisihInput.value = '';
+                qtySelisihInput.className = 'qty-selisih w-full px-2 py-1.5 text-sm bg-transparent border-0 focus:ring-0 text-center font-bold';
+                return;
+            }
+
+            const selisih = actVal - sysVal;
+            qtySelisihInput.value = selisih % 1 !== 0 ? selisih.toFixed(2) : selisih;
+            
+            if (selisih < 0) {
+                qtySelisihInput.className = 'qty-selisih w-full px-2 py-1.5 text-sm bg-transparent border-0 focus:ring-0 text-center font-bold text-red-600 bg-red-50 rounded';
+            } else if (selisih > 0) {
+                qtySelisihInput.className = 'qty-selisih w-full px-2 py-1.5 text-sm bg-transparent border-0 focus:ring-0 text-center font-bold text-green-600 bg-green-50 rounded';
+                qtySelisihInput.value = '+' + qtySelisihInput.value;
+            } else {
+                qtySelisihInput.className = 'qty-selisih w-full px-2 py-1.5 text-sm bg-transparent border-0 focus:ring-0 text-center font-bold text-gray-500 bg-gray-100 rounded';
+            }
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            const nameDisplay = document.getElementById('fileNameDisplay');
+            if (!file) return;
+
+            nameDisplay.innerHTML = `<span class="text-blue-500"><i class="fa-solid fa-spinner fa-spin mr-1"></i> Memproses file...</span>`;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    let width = img.width, height = img.height;
+                    const MAX_DIM = 800;
+
+                    if (width > height && width > MAX_DIM) { height *= MAX_DIM / width; width = MAX_DIM; }
+                    else if (height > MAX_DIM) { width *= MAX_DIM / height; height = MAX_DIM; }
+
+                    canvas.width = width; canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+
+                    const base64Data = canvas.toDataURL('image/jpeg', 0.6).split(',')[1];
+                    document.getElementById('dokumentasiBase64').value = base64Data;
+                    document.getElementById('dokumentasiMimeType').value = 'image/jpeg';
+                    document.getElementById('dokumentasiFilename').value = 'Bukti_' + Date.now() + '.jpg';
+                    
+                    nameDisplay.innerHTML = `<span class="text-green-600 font-bold"><i class="fa-solid fa-check-circle mr-1"></i> ${file.name}</span>`;
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleSubmit(e) {
+            e.preventDefault();
+            const submitBtn = document.getElementById('submitBtn');
+            const originalBtnHtml = submitBtn.innerHTML;
+
+            const materialVal = document.getElementById('material').value;
+            if(!materialVal) {
+                Swal.fire('Perhatian', 'Pilih material terlebih dahulu!', 'warning');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Menyimpan...`;
+
+            const getArrayVals = (name) => Array.from(document.querySelectorAll(`input[name="${name}"]`)).map(el => el.value).join('\n');
+
+            const payload = {
+                tanggal: document.getElementById('tanggal').value, jam: document.getElementById('jam').value,
+                pelaksana: document.getElementById('pelaksana').value, material: materialVal,
+                materialDescription: document.getElementById('materialDescription').value, partNumber: document.getElementById('partNumber').value,
+                storageLocation: getArrayVals('sloc[]'), storageBin: getArrayVals('bin[]'), batch: getArrayVals('batch[]'),
+                unrestricted: getArrayVals('unrest[]'), uom: getArrayVals('uom[]'), materialType: getArrayVals('type[]'),
+                hasilAktual: getArrayVals('aktual[]'), selisih: getArrayVals('selisih[]'),
+                alokasi: document.getElementById('alokasi').value, tindakan: document.getElementById('tindakan').value,
+                dokumentasiBase64: document.getElementById('dokumentasiBase64').value, dokumentasiMimeType: document.getElementById('dokumentasiMimeType').value,
+                filename: document.getElementById('dokumentasiFilename').value
+            };
+
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+                google.script.run
+                    .withSuccessHandler(function() {
+                        Swal.fire({ title: 'Berhasil!', text: 'Data telah disimpan.', icon: 'success' }).then(() => resetForm(originalBtnHtml));
+                    })
+                    .withFailureHandler(function(error) {
+                        Swal.fire('Error', 'Gagal menyimpan: ' + error, 'error');
+                        submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml;
+                    })
+                    .processForm(payload);
+            } else {
+                fetch(URL_WEB_APP, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(payload) })
+                .then(() => Swal.fire({ title: 'Berhasil!', text: 'Data telah dikirim.', icon: 'success' }).then(() => resetForm(originalBtnHtml)))
+                .catch(() => { submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml; });
+            }
+        }
+
+        function resetForm(originalBtnHtml) {
+            document.getElementById('inventoryForm').reset();
+            document.getElementById('tanggal').value = now.toISOString().split('T')[0];
+            document.getElementById('jam').value = now.toTimeString().split(' ')[0].slice(0,5);
+            clearAutoFill(); document.getElementById('material').value = '';
+            document.getElementById('fileNameDisplay').innerHTML = 'Klik untuk upload foto';
+            document.getElementById('dokumentasiBase64').value = ''; document.getElementById('dokumentasiMimeType').value = ''; document.getElementById('dokumentasiFilename').value = '';
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = false; submitBtn.innerHTML = originalBtnHtml;
+        }
+    </script>
+</body>
+</html>
