@@ -193,7 +193,7 @@
         document.getElementById('tanggal').value = now.toISOString().split('T')[0];
         document.getElementById('jam').value = now.toTimeString().split(' ')[0].slice(0,5);
         
-        const URL_WEB_APP = "https://script.google.com/macros/s/AKfycbyTfTcHIwyUjQdg5FF21I-6pjxCsnixQ2saYrp642DO9QjvpOHru32Zi5nmYSVYjy12/exec";
+        const URL_WEB_APP = "https://script.google.com/macros/s/AKfycbz_UyP9SJ_JuOPFujx3aLcBPU-51mkl1A2d6BLbNJ5Ra5RQELSORsHMCp9nuybTyzLA/exec";
         let masterDataMap = new Map();
         const materialInput = document.getElementById('material');
         const dropdown = document.getElementById('materialDropdown');
@@ -207,13 +207,14 @@
             const loadingIndicator = document.getElementById('loadingIndicator');
 
             if (typeof google !== 'undefined' && google.script && google.script.run) {
+                // 1. JIKA DIBUKA LANGSUNG LEWAT LINK APPS SCRIPT
                 google.script.run
                     .withSuccessHandler(function(responseStr) {
                         try {
                             const response = JSON.parse(responseStr);
                             if (response.status === "success") {
                                 processMasterData(response.sheet1); 
-                                unlockSearchInput("Cari Material, Deskripsi, Part Number, atau Bin...");
+                                validateAndUnlock();
                             } else {
                                 Swal.fire("Gagal", "Gagal mengambil data master: " + response.message, "error");
                             }
@@ -223,17 +224,32 @@
                     })
                     .getMasterData();
             } else {
-                // DATA DUMMY (KHUSUS PREVIEW DI SINI AGAR ANDA BISA MENGETES FITURNYA)
-                console.warn("Menjalankan Mode Preview Lokal.");
-                const dummyData = [
-                    ["MATERIAL", "DESC", "PART", "SLOC", "BIN", "BATCH", "QTY", "UOM", "TYPE"],
-                    ["101234", "Baut Baja M8 Panjang 20mm", "PN-001X", "GUD1", "A-01-B1", "B01", "150", "PCS", "SPAREPART"],
-                    ["101234", "Baut Baja M8 Panjang 20mm", "PN-001X", "GUD1", "A-01-B2", "B02", "50", "PCS", "SPAREPART"],
-                    ["225577", "Bearing Mesin 6204", "PN-BRG-2", "GUD2", "C-05-A1", "", "12", "PCS", "SPAREPART"],
-                    ["889900", "Oli Pelumas Mesin 10W-40", "OLI-10W", "GUD3", "D-10-X1", "B99", "5", "L", "CONSUMABLE"]
-                ];
-                processMasterData(dummyData);
-                unlockSearchInput("Mode Preview Aktif - Ketik 'Baut' atau 'Bearing' atau '101234'...");
+                // 2. JIKA DIBUKA DARI FILE HTML LOKAL / HOSTING LUAR (MENGGUNAKAN LINK EXEC)
+                console.log("Menarik data asli dari server Web App...");
+                fetch(URL_WEB_APP + "?action=get_master")
+                    .then(res => res.json())
+                    .then(response => {
+                        if (response.status === "success") {
+                            processMasterData(response.sheet1);
+                            validateAndUnlock();
+                        } else {
+                            Swal.fire("Koneksi Gagal", "Gagal mengambil data dari Google Sheet.", "error");
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Fetch Error:", err);
+                        Swal.fire("Error Jaringan", "Pastikan internet Anda stabil dan link exec sudah benar.", "error");
+                    });
+            }
+        }
+        
+        function validateAndUnlock() {
+            // Memberi tahu Anda jumlah data aktual yang berhasil ditarik
+            if(masterDataMap.size === 0) {
+                Swal.fire("Peringatan", "Data MB52 berhasil terbuka, TAPI judul kolom di Excel tidak dikenali/kosong. Pastikan Baris 1 berisi tulisan MATERIAL, DESC, BIN, dll.", "warning");
+                unlockSearchInput("Pencarian aktif (Data Master Kosong)");
+            } else {
+                unlockSearchInput(`Data Siap! (${masterDataMap.size} material berhasil dimuat).`);
             }
         }
 
@@ -262,7 +278,6 @@
                 const updateIfExists = (key) => {
                     if (masterDataMap.has(key)) {
                         let existingLocs = masterDataMap.get(key).locations;
-                        // Mencegah duplikasi data lokasi yang sama persis
                         let isDuplicate = existingLocs.some(l => l.sloc === info.locations[0].sloc && l.bin === info.locations[0].bin && l.batch === info.locations[0].batch);
                         if(!isDuplicate) {
                             existingLocs.push(info.locations[0]);
@@ -281,19 +296,22 @@
                 let headerRowIndex = -1;
                 let headers = [];
 
-                // PERBAIKAN: Deteksi header diperluas hingga baris 50 dan kosa kata diperbanyak
-                for (let i = 0; i < Math.min(50, jsonArray.length); i++) {
+                // PERBAIKAN: Deteksi header diperluas hingga baris 100, ditambah pembersih "Enter/Garis Baru" (Regex)
+                for (let i = 0; i < Math.min(100, jsonArray.length); i++) {
                     const row = jsonArray[i];
                     if (!row || !Array.isArray(row)) continue;
                     
                     const hasMaterialHeader = row.some(cell => {
-                        const cellStr = String(cell || '').trim().toUpperCase();
-                        return ['MATERIAL', 'MATNR', 'KODE', 'MATERIAL NUMBER', 'MATERIAL_NO', 'KODE BARANG', 'KODE MATERIAL'].includes(cellStr);
+                        // Membersihkan spasi ganda dan enter (newline) yang sering terjadi di export SAP MB52
+                        const cellStr = String(cell || '').replace(/\r?\n|\r/g, ' ').replace(/\s+/g, ' ').trim().toUpperCase();
+                        return ['MATERIAL', 'MATNR', 'KODE', 'MATERIAL NUMBER', 'MATERIAL NO', 'KODE BARANG', 'KODE MATERIAL', 'ITEM', 'NO MATERIAL'].includes(cellStr) || 
+                               (cellStr.includes('MATERIAL') && !cellStr.includes('DESC') && !cellStr.includes('TYPE'));
                     });
                     
                     if (hasMaterialHeader) {
                         headerRowIndex = i;
-                        headers = row.map(h => String(h || '').trim().toUpperCase());
+                        // Simpan header dengan format yang sudah dibersihkan
+                        headers = row.map(h => String(h || '').replace(/\r?\n|\r/g, ' ').replace(/\s+/g, ' ').trim().toUpperCase());
                         break;
                     }
                 }
@@ -308,20 +326,20 @@
                         
                         headers.forEach((header, index) => {
                             const val = row[index] !== undefined && row[index] !== null ? String(row[index]).trim() : "";
-                            if (!val) return; // Lewati cell kosong agar tidak menimpa data yang mungkin ada
+                            if (!val) return; 
 
                             const h = header;
                             
-                            // Logika pendeteksian kolom SUPER CERDAS (Mencakup SAP MB52 & manual Excel)
-                            if (h === 'MATERIAL' || h === 'MATNR' || h.includes('KODE MATERIAL') || h.includes('MATERIAL NUMBER') || h === 'KODE BARANG' || h === 'MATERIAL_NO') matCode = val;
-                            else if (h.includes('DESC') || h.includes('DESK') || h.includes('MAKTX') || h === 'MATERIAL DESCRIPTION' || h === 'NAMA BARANG' || h === 'TEXT' || h === 'NAMA') desc = val;
-                            else if (h.includes('PART') || h === 'PN' || h.includes('MFRPN') || h.includes('NOMOR PART') || h === 'NO PART' || h === 'PART NUMBER') partNum = val;
-                            else if (h === 'SLOC' || h === 'LGORT' || h.includes('LOKASI') || h === 'PLNT' || h === 'PLANT' || h.includes('STORAGE LOC') || h === 'GUDANG' || h === 'SL') sloc = val;
-                            else if (h.includes('BIN') || h === 'LGPBE' || h.includes('RAK') || h.includes('STORAGE BIN') || h === 'BIN LOCATION') { if(!bin) bin = val; }
+                            // Logika deteksi kolom disesuaikan dengan format teks yang sudah bersih
+                            if (h === 'MATERIAL' || h === 'MATNR' || h === 'KODE MATERIAL' || h === 'MATERIAL NUMBER' || h === 'KODE BARANG' || h === 'MATERIAL NO' || h === 'ITEM' || h === 'NO MATERIAL' || (h.includes('MATERIAL') && !h.includes('DESC') && !h.includes('TYPE'))) matCode = val;
+                            else if (h.includes('DESC') || h.includes('DESK') || h.includes('MAKTX') || h === 'NAMA BARANG' || h === 'TEXT' || h === 'NAMA' || h === 'MATERIAL DESCRIPTION') desc = val;
+                            else if (h.includes('PART') || h === 'PN' || h.includes('MFRPN') || h === 'NO PART' || h === 'NOMOR PART') partNum = val;
+                            else if (h === 'SLOC' || h === 'LGORT' || h.includes('LOKASI') || h === 'PLNT' || h === 'PLANT' || h.includes('STORAGE') || h === 'GUDANG' || h === 'SL') sloc = val;
+                            else if (h.includes('BIN') || h === 'LGPBE' || h.includes('RAK')) { if(!bin) bin = val; }
                             else if (h.includes('BATCH') || h === 'CHARG' || h === 'LOT' || h === 'NO BATCH') batch = val;
-                            else if (h.includes('UNRESTRICTED') || h.includes('QTY') || h.includes('STOK') || h === 'LABST' || h.includes('SIS') || h === 'STOCK' || h === 'JUMLAH' || h === 'SISA') { if(!unrest) unrest = val; }
-                            else if (h === 'BUN' || h === 'UOM' || h === 'OUM' || h.includes('UNIT') || h.includes('SATUAN') || h === 'MEINS' || h === 'UOM/BUN') uom = val;
-                            else if (h.includes('TYPE') || h === 'MTART' || h === 'MTYP' || h.includes('TIPE') || h === 'JENIS' || h === 'MATERIAL TYPE') type = val;
+                            else if (h.includes('UNRESTRICTED') || h.includes('QTY') || h.includes('STOK') || h === 'LABST' || h.includes('SIS') || h === 'STOCK' || h === 'JUMLAH') { if(!unrest) unrest = val; }
+                            else if (h === 'BUN' || h === 'UOM' || h === 'OUM' || h.includes('UNIT') || h.includes('SATUAN') || h === 'MEINS' || h === 'BASE UNIT') uom = val;
+                            else if (h.includes('TYPE') || h === 'MTART' || h === 'MTYP' || h.includes('TIPE') || h === 'JENIS') type = val;
                         });
                         
                         if (matCode) {
