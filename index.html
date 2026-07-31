@@ -306,15 +306,15 @@
                     // Gabungkan isi satu baris menjadi satu teks besar untuk dianalisis
                     const rowText = row.map(cell => String(cell || '').toUpperCase()).join(' ');
                     
-                    // Beri poin jika baris ini mengandung kata-kata yang biasa ada di judul kolom inventory
+                    // Deteksi kata kunci dari header MB52
                     if (rowText.includes('MATERIAL') || rowText.includes('MATNR') || rowText.includes('KODE')) score++;
                     if (rowText.includes('DESC') || rowText.includes('DESK') || rowText.includes('NAMA')) score++;
                     if (rowText.includes('BIN') || rowText.includes('RAK')) score++;
-                    if (rowText.includes('SLOC') || rowText.includes('LOKASI') || rowText.includes('GUDANG')) score++;
-                    if (rowText.includes('QTY') || rowText.includes('STOK') || rowText.includes('UNREST') || rowText.includes('SIS')) score++;
+                    if (rowText.includes('SLOC') || rowText.includes('STORAGE') || rowText.includes('GUDANG')) score++;
+                    if (rowText.includes('QTY') || rowText.includes('UNREST') || rowText.includes('STOK')) score++;
                     if (rowText.includes('PART') || rowText.includes('PN')) score++;
 
-                    // Jika minimal ada 2 kecocokan kata kunci (Skor >= 2), kita tetapkan ini pasti baris Judul (Header)
+                    // Jika minimal ada 2 kecocokan kata kunci, tetapkan ini pasti baris Judul
                     if (score >= 2) {
                         headerRowIndex = i;
                         headers = row.map(h => String(h || '').replace(/\r?\n|\r/g, ' ').replace(/\s+/g, ' ').trim().toUpperCase());
@@ -336,16 +336,16 @@
 
                             const h = header;
                             
-                            // Logika mapping kolom yang jauh lebih luas dan kebal terhadap perbedaan ejaan
-                            if (h === 'MATERIAL' || h === 'MATNR' || h.includes('KODE') || h.includes('ITEM') || (h.includes('MATERIAL') && !h.includes('DESC') && !h.includes('TYPE'))) matCode = val;
-                            else if (h.includes('DESC') || h.includes('DESK') || h.includes('MAKTX') || h.includes('NAMA') || h === 'TEXT') desc = val;
-                            else if (h.includes('PART') || h === 'PN' || h.includes('MFRPN')) partNum = val;
-                            else if (h === 'SLOC' || h === 'LGORT' || h.includes('LOKASI') || h === 'PLNT' || h === 'PLANT' || h.includes('STORAGE') || h.includes('GUDANG') || h === 'SL') sloc = val;
-                            else if (h.includes('BIN') || h === 'LGPBE' || h.includes('RAK')) { if(!bin) bin = val; }
+                            // Logika mapping kolom yang disesuaikan persis dengan list MB52 Anda
+                            if (h === 'MATERIAL' || h === 'MATNR' || h === 'KODE MATERIAL' || (h.includes('MATERIAL') && !h.includes('DESC') && !h.includes('TYPE') && !h.includes('GROUP'))) matCode = val;
+                            else if (h.includes('DESC') || h === 'MATERIAL DESCRIPTION' || h.includes('NAMA')) desc = val;
+                            else if (h.includes('PART') || h === 'MFR PART NUMBER' || h === 'MFRPN' || h === 'PN') partNum = val;
+                            else if (h === 'SLOC' || h.includes('STORAGE LOCATION') || h === 'LOKASI' || h === 'GUDANG') sloc = val;
+                            else if (h.includes('BIN') || h === 'STORAGE BIN' || h.includes('RAK')) { if(!bin) bin = val; }
                             else if (h.includes('BATCH') || h === 'CHARG' || h === 'LOT') batch = val;
-                            else if (h.includes('UNREST') || h.includes('QTY') || h.includes('STOK') || h === 'LABST' || h.includes('SIS') || h.includes('STOCK') || h.includes('JUMLAH')) { if(!unrest) unrest = val; }
-                            else if (h === 'BUN' || h.includes('UOM') || h.includes('UNIT') || h.includes('SATUAN') || h.includes('MEINS')) uom = val;
-                            else if (h.includes('TYPE') || h === 'MTART' || h.includes('TIPE')) type = val;
+                            else if (h.includes('UNREST') || h === 'UNRESTRICTED' || h.includes('QTY') || h.includes('STOK') || h.includes('SIS')) { if(!unrest) unrest = val; }
+                            else if (h === 'BUN' || h.includes('UOM') || h.includes('UNIT') || h === 'BASE UNIT OF MEASURE' || h.includes('SATUAN')) uom = val;
+                            else if (h.includes('TYPE') || h === 'MATERIAL TYPE' || h.includes('TIPE')) type = val;
                         });
                         
                         // Menambahkan dan menyimpan material ke memori
@@ -353,7 +353,7 @@
                     }
                 }
             }
-        } // Menutup fungsi processMasterData yang sebelumnya terpotong
+        } // Menutup fungsi processMasterData
 
         // EVENT LISTENER PENCARIAN GLOBAL
         if(materialInput && dropdown) {
@@ -380,7 +380,7 @@
                     let matchType = String(info.type || '').toUpperCase().includes(val);
                     let matchUom = String(info.uom || '').toUpperCase().includes(val);
 
-                    // Cek pencarian di data lokasi/stok (Sloc, Bin, Batch, Unrestricted/Qty)
+                    // Cek pencarian di data lokasi/stok (Sloc, Bin, Batch, Unrestricted)
                     let matchLocations = info.locations.some(loc => 
                         String(loc.sloc || '').toUpperCase().includes(val) ||
                         String(loc.bin || '').toUpperCase().includes(val) ||
@@ -388,10 +388,10 @@
                         String(loc.unrest || '').toUpperCase().includes(val)
                     );
 
-                    // Jika ADA SATU SAJA yang cocok dari semua parameter di atas, tampilkan hasilnya
+                    // Jika ADA SATU SAJA yang cocok dari semua kriteria MB52 di atas
                     if (matchKey || matchDesc || matchPN || matchType || matchUom || matchLocations) {
                         matches.push({ key: key, info: info });
-                        if(matches.length >= 30) break; // Membatasi max 30 hasil agar tidak lag
+                        if(matches.length >= 40) break; // Membatasi max 40 hasil agar pencarian super cepat
                     }
                 }
 
@@ -399,8 +399,14 @@
                     matches.forEach(match => {
                         const div = document.createElement('div');
                         div.className = "px-4 py-3 border-b border-gray-100 hover:bg-blue-50 cursor-pointer transition-colors";
-                        div.innerHTML = `<div class="font-bold text-gray-800">${match.key} <span class="text-xs font-normal text-gray-500 ml-2">PN: ${match.info.partNum || '-'}</span></div>
-                                         <div class="text-sm text-gray-600 truncate">${match.info.desc}</div>`;
+                        
+                        // Ekstraksi info lokasi pertama untuk ditampilkan di dropdown agar lebih informatif
+                        const loc = match.info.locations[0] || {};
+                        const locText = `Sloc: ${loc.sloc || '-'} | Bin: ${loc.bin || '-'} | Batch: ${loc.batch || '-'} | Unrest: ${loc.unrest || '0'}`;
+
+                        div.innerHTML = `<div class="font-bold text-gray-800">${match.key} <span class="text-xs font-normal text-gray-500 ml-2">PN: ${match.info.partNum || '-'} | Type: ${match.info.type || '-'}</span></div>
+                                         <div class="text-sm text-gray-600 truncate">${match.info.desc}</div>
+                                         <div class="text-xs text-blue-600 font-medium mt-1"><i class="fa-solid fa-location-dot mr-1"></i> ${locText} ${match.info.uom}</div>`;
                         div.addEventListener('click', function() {
                             materialInput.value = match.key;
                             dropdown.classList.add('hidden');
