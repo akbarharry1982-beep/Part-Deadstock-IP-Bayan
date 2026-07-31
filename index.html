@@ -70,7 +70,7 @@
                         </h3>
                         
                         <div class="relative">
-                            <label class="block text-sm font-semibold text-gray-700 mb-2">Ketik Kode Material / Deskripsi / Part Number / Bin</label>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Pencarian Global (Cari Material, Desc, Part No, SLoc, Bin, Batch, dll)</label>
                             <div class="flex items-center gap-3">
                                 <div class="relative flex-1">
                                     <input type="text" id="material" placeholder="Memuat data dari server..." disabled autocomplete="off"
@@ -193,7 +193,7 @@
         document.getElementById('tanggal').value = now.toISOString().split('T')[0];
         document.getElementById('jam').value = now.toTimeString().split(' ')[0].slice(0,5);
         
-        const URL_WEB_APP = "https://script.google.com/macros/s/AKfycbz_UyP9SJ_JuOPFujx3aLcBPU-51mkl1A2d6BLbNJ5Ra5RQELSORsHMCp9nuybTyzLA/exec";
+        const URL_WEB_APP = "https://script.google.com/macros/s/AKfycbyZ6qtkpjIer4ACa0E5Ts4qxcIP095tBLGunhGnc6sH2pXubqOVXlBRo1kZ_JaQGJ8v/exec";
         let masterDataMap = new Map();
         const materialInput = document.getElementById('material');
         const dropdown = document.getElementById('materialDropdown');
@@ -296,21 +296,27 @@
                 let headerRowIndex = -1;
                 let headers = [];
 
-                // PERBAIKAN: Deteksi header diperluas hingga baris 100, ditambah pembersih "Enter/Garis Baru" (Regex)
-                for (let i = 0; i < Math.min(100, jsonArray.length); i++) {
+                // PERBAIKAN: Menggunakan "Sistem Poin (Scoring)" untuk mendeteksi Header
+                // Mencari hingga baris ke-200 karena kadang data Excel diawali banyak baris kosong/intro
+                for (let i = 0; i < Math.min(200, jsonArray.length); i++) {
                     const row = jsonArray[i];
                     if (!row || !Array.isArray(row)) continue;
                     
-                    const hasMaterialHeader = row.some(cell => {
-                        // Membersihkan spasi ganda dan enter (newline) yang sering terjadi di export SAP MB52
-                        const cellStr = String(cell || '').replace(/\r?\n|\r/g, ' ').replace(/\s+/g, ' ').trim().toUpperCase();
-                        return ['MATERIAL', 'MATNR', 'KODE', 'MATERIAL NUMBER', 'MATERIAL NO', 'KODE BARANG', 'KODE MATERIAL', 'ITEM', 'NO MATERIAL'].includes(cellStr) || 
-                               (cellStr.includes('MATERIAL') && !cellStr.includes('DESC') && !cellStr.includes('TYPE'));
-                    });
+                    let score = 0;
+                    // Gabungkan isi satu baris menjadi satu teks besar untuk dianalisis
+                    const rowText = row.map(cell => String(cell || '').toUpperCase()).join(' ');
                     
-                    if (hasMaterialHeader) {
+                    // Beri poin jika baris ini mengandung kata-kata yang biasa ada di judul kolom inventory
+                    if (rowText.includes('MATERIAL') || rowText.includes('MATNR') || rowText.includes('KODE')) score++;
+                    if (rowText.includes('DESC') || rowText.includes('DESK') || rowText.includes('NAMA')) score++;
+                    if (rowText.includes('BIN') || rowText.includes('RAK')) score++;
+                    if (rowText.includes('SLOC') || rowText.includes('LOKASI') || rowText.includes('GUDANG')) score++;
+                    if (rowText.includes('QTY') || rowText.includes('STOK') || rowText.includes('UNREST') || rowText.includes('SIS')) score++;
+                    if (rowText.includes('PART') || rowText.includes('PN')) score++;
+
+                    // Jika minimal ada 2 kecocokan kata kunci (Skor >= 2), kita tetapkan ini pasti baris Judul (Header)
+                    if (score >= 2) {
                         headerRowIndex = i;
-                        // Simpan header dengan format yang sudah dibersihkan
                         headers = row.map(h => String(h || '').replace(/\r?\n|\r/g, ' ').replace(/\s+/g, ' ').trim().toUpperCase());
                         break;
                     }
@@ -330,26 +336,26 @@
 
                             const h = header;
                             
-                            // Logika deteksi kolom disesuaikan dengan format teks yang sudah bersih
-                            if (h === 'MATERIAL' || h === 'MATNR' || h === 'KODE MATERIAL' || h === 'MATERIAL NUMBER' || h === 'KODE BARANG' || h === 'MATERIAL NO' || h === 'ITEM' || h === 'NO MATERIAL' || (h.includes('MATERIAL') && !h.includes('DESC') && !h.includes('TYPE'))) matCode = val;
-                            else if (h.includes('DESC') || h.includes('DESK') || h.includes('MAKTX') || h === 'NAMA BARANG' || h === 'TEXT' || h === 'NAMA' || h === 'MATERIAL DESCRIPTION') desc = val;
-                            else if (h.includes('PART') || h === 'PN' || h.includes('MFRPN') || h === 'NO PART' || h === 'NOMOR PART') partNum = val;
-                            else if (h === 'SLOC' || h === 'LGORT' || h.includes('LOKASI') || h === 'PLNT' || h === 'PLANT' || h.includes('STORAGE') || h === 'GUDANG' || h === 'SL') sloc = val;
+                            // Logika mapping kolom yang jauh lebih luas dan kebal terhadap perbedaan ejaan
+                            if (h === 'MATERIAL' || h === 'MATNR' || h.includes('KODE') || h.includes('ITEM') || (h.includes('MATERIAL') && !h.includes('DESC') && !h.includes('TYPE'))) matCode = val;
+                            else if (h.includes('DESC') || h.includes('DESK') || h.includes('MAKTX') || h.includes('NAMA') || h === 'TEXT') desc = val;
+                            else if (h.includes('PART') || h === 'PN' || h.includes('MFRPN')) partNum = val;
+                            else if (h === 'SLOC' || h === 'LGORT' || h.includes('LOKASI') || h === 'PLNT' || h === 'PLANT' || h.includes('STORAGE') || h.includes('GUDANG') || h === 'SL') sloc = val;
                             else if (h.includes('BIN') || h === 'LGPBE' || h.includes('RAK')) { if(!bin) bin = val; }
-                            else if (h.includes('BATCH') || h === 'CHARG' || h === 'LOT' || h === 'NO BATCH') batch = val;
-                            else if (h.includes('UNRESTRICTED') || h.includes('QTY') || h.includes('STOK') || h === 'LABST' || h.includes('SIS') || h === 'STOCK' || h === 'JUMLAH') { if(!unrest) unrest = val; }
-                            else if (h === 'BUN' || h === 'UOM' || h === 'OUM' || h.includes('UNIT') || h.includes('SATUAN') || h === 'MEINS' || h === 'BASE UNIT') uom = val;
-                            else if (h.includes('TYPE') || h === 'MTART' || h === 'MTYP' || h.includes('TIPE') || h === 'JENIS') type = val;
+                            else if (h.includes('BATCH') || h === 'CHARG' || h === 'LOT') batch = val;
+                            else if (h.includes('UNREST') || h.includes('QTY') || h.includes('STOK') || h === 'LABST' || h.includes('SIS') || h.includes('STOCK') || h.includes('JUMLAH')) { if(!unrest) unrest = val; }
+                            else if (h === 'BUN' || h.includes('UOM') || h.includes('UNIT') || h.includes('SATUAN') || h.includes('MEINS')) uom = val;
+                            else if (h.includes('TYPE') || h === 'MTART' || h.includes('TIPE')) type = val;
                         });
                         
-                        if (matCode) {
-                            addMaterialToMap(matCode, partNum, desc, uom, type, sloc, bin, batch, unrest);
-                        }
+                        // Menambahkan dan menyimpan material ke memori
+                        addMaterialToMap(matCode, partNum, desc, uom, type, sloc, bin, batch, unrest);
                     }
                 }
             }
-        }
+        } // Menutup fungsi processMasterData yang sebelumnya terpotong
 
+        // EVENT LISTENER PENCARIAN GLOBAL
         if(materialInput && dropdown) {
             materialInput.addEventListener('input', function() {
                 const val = this.value.trim().toUpperCase();
@@ -367,13 +373,25 @@
 
                 let matches = [];
                 for (const [key, info] of masterDataMap.entries()) {
-                    let hasMatchInBin = info.locations.some(loc => String(loc.bin || '').toUpperCase().includes(val));
-                    let hasMatchInDesc = String(info.desc || '').toUpperCase().includes(val);
-                    let hasMatchInPN = String(info.partNum || '').toUpperCase().includes(val);
+                    // Cek pencarian di data induk (Material, Desc, Part Num, Type, UoM)
+                    let matchKey = key.toUpperCase().includes(val);
+                    let matchDesc = String(info.desc || '').toUpperCase().includes(val);
+                    let matchPN = String(info.partNum || '').toUpperCase().includes(val);
+                    let matchType = String(info.type || '').toUpperCase().includes(val);
+                    let matchUom = String(info.uom || '').toUpperCase().includes(val);
 
-                    if (key.toUpperCase().includes(val) || hasMatchInDesc || hasMatchInPN || hasMatchInBin) {
+                    // Cek pencarian di data lokasi/stok (Sloc, Bin, Batch, Unrestricted/Qty)
+                    let matchLocations = info.locations.some(loc => 
+                        String(loc.sloc || '').toUpperCase().includes(val) ||
+                        String(loc.bin || '').toUpperCase().includes(val) ||
+                        String(loc.batch || '').toUpperCase().includes(val) ||
+                        String(loc.unrest || '').toUpperCase().includes(val)
+                    );
+
+                    // Jika ADA SATU SAJA yang cocok dari semua parameter di atas, tampilkan hasilnya
+                    if (matchKey || matchDesc || matchPN || matchType || matchUom || matchLocations) {
                         matches.push({ key: key, info: info });
-                        if(matches.length >= 30) break;
+                        if(matches.length >= 30) break; // Membatasi max 30 hasil agar tidak lag
                     }
                 }
 
