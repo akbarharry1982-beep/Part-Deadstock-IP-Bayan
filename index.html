@@ -364,14 +364,13 @@
         });
         
         async function fetchSheetData() {
-            // Menggunakan API modern 'fetch' untuk menghindari blokir CORS di HP
             const sheetUrl = "https://docs.google.com/spreadsheets/d/1ctGlztu9MfUX28P_I1MGmk8QYdu7UORHxQ8C-h0WZ6k/gviz/tq?tqx=out:csv&gid=86846704&t=" + new Date().getTime();
             const statusHelp = document.getElementById('materialHelp');
             
             statusHelp.innerHTML = "<span class='text-amber-500 flex items-center gap-1'><i class='ph ph-spinner-gap animate-spin'></i> Memuat database MB52...</span>";
 
             try {
-                const response = await fetch(sheetUrl);
+                const response = await fetch(sheetUrl, { cache: 'no-store' });
                 if (!response.ok) throw new Error("Gagal terhubung ke server data");
                 const csvText = await response.text();
 
@@ -394,12 +393,11 @@
                 });
             } catch (err) {
                 console.error("Fetch error:", err);
-                statusHelp.innerHTML = "<span class='text-red-500 flex items-center gap-1'><i class='ph ph-warning'></i> Gagal memuat database (Tolak akses / jaringan terputus).</span>";
+                statusHelp.innerHTML = "<span class='text-red-500 flex items-center gap-1'><i class='ph ph-warning'></i> Gagal memuat data. (Pastikan Sheet bersifat Publik 'Siapa Saja Memiliki Link').</span>";
             }
         }
 
         async function fetchHistoryData() {
-            // Menggunakan API modern 'fetch' untuk menarik data riwayat dari Sheet INSPEKSI
             const historyUrl = "https://docs.google.com/spreadsheets/d/1ctGlztu9MfUX28P_I1MGmk8QYdu7UORHxQ8C-h0WZ6k/gviz/tq?tqx=out:csv&sheet=INSPEKSI&t=" + new Date().getTime();
             const tbody = document.getElementById('historyTableBody');
             
@@ -408,7 +406,7 @@
             }
 
             try {
-                const response = await fetch(historyUrl);
+                const response = await fetch(historyUrl, { cache: 'no-store' });
                 if (!response.ok) throw new Error("Gagal terhubung ke server riwayat");
                 const csvText = await response.text();
 
@@ -427,7 +425,7 @@
                                 aktual: row['Aktual'] || 0,
                                 selisih: parseFloat(row['Selisih'] || 0)
                             };
-                        }).reverse().slice(0, 100); // Batasi hanya menampilkan 100 data terakhir agar ringan
+                        }).reverse().slice(0, 100); 
                         
                         renderHistory();
                     },
@@ -441,7 +439,7 @@
             } catch (err) {
                 console.error("Error fetching history:", err);
                 if (tbody) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-red-500 text-sm"><i class="ph ph-warning"></i> Gagal memuat riwayat server. Pastikan internet stabil & Sheet publik.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-red-500 text-sm"><i class="ph ph-warning"></i> Gagal memuat riwayat. (Pastikan Sheet Publik).</td></tr>';
                 }
             }
         }
