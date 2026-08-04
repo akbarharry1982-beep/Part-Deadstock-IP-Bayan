@@ -83,7 +83,6 @@
                 </div>
                 
                 <form id="inspeksiForm" class="p-6 space-y-8">
-                    <!-- Informasi Dasar -->
                     <div>
                         <h3 class="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4 pb-2 border-b border-slate-100">Informasi Umum</h3>
                         <div class="grid grid-cols-1 gap-5">
@@ -153,6 +152,31 @@
                     <div>
                         <h3 class="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4 pb-2 border-b border-slate-100">Alokasi & Catatan</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
+                            
+                            <!-- Box Selection (New Field) -->
+                            <div class="md:col-span-2">
+                                <label for="boxSelection" class="block text-sm font-medium text-slate-700 mb-1">Box <span class="text-brand-500">*</span></label>
+                                <div class="relative">
+                                    <select id="boxSelection"
+                                        class="block w-full px-3 py-2.5 rounded-lg border border-slate-300 bg-slate-50 text-sm focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all outline-none appearance-none">
+                                        <option value="" disabled selected>Pilih Box...</option>
+                                        <option value="Box 1">Box 1</option>
+                                        <option value="Box 2">Box 2</option>
+                                        <option value="Box 3">Box 3</option>
+                                        <option value="Box 4">Box 4</option>
+                                        <option value="Box 5">Box 5</option>
+                                        <option value="Box 6">Box 6</option>
+                                        <option value="Box 7">Box 7</option>
+                                        <option value="Box 8">Box 8</option>
+                                        <option value="Box 9">Box 9</option>
+                                        <option value="Box 10">Box 10</option>
+                                    </select>
+                                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                                        <i class="ph ph-caret-down"></i>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="md:col-span-2">
                                 <label for="alokasiPart" class="block text-sm font-medium text-slate-700 mb-1">Alokasi Part <span class="text-brand-500">*</span></label>
                                 <div class="relative">
@@ -215,7 +239,6 @@
             </div>
         </div>
 
-        <!-- RIWAYAT SECTION -->
         <div class="w-full mt-8">
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
@@ -275,7 +298,7 @@
         let sessionHistory = []; 
         
         // Link Apps Script terbaru
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbzd6Ov_08qD6TBqc3KVRYUcrTi0-e7iqmYf3Y3IgyT9KZvqo99skgFy_5VfdfWSwMcg/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbyV6LcjaYi_5p-IdPIgqXUJOzc26oV1Ampn3TxMbUuMIiKCVuWWxyDZgQ7Q70iETCEF/exec";
 
         // Element Referensi
         const form = document.getElementById('inspeksiForm');
@@ -363,41 +386,33 @@
             }
         });
         
-        async function fetchSheetData() {
+        function fetchSheetData() {
             const sheetUrl = "https://docs.google.com/spreadsheets/d/1ctGlztu9MfUX28P_I1MGmk8QYdu7UORHxQ8C-h0WZ6k/gviz/tq?tqx=out:csv&gid=86846704&t=" + new Date().getTime();
             const statusHelp = document.getElementById('materialHelp');
             
             statusHelp.innerHTML = "<span class='text-amber-500 flex items-center gap-1'><i class='ph ph-spinner-gap animate-spin'></i> Memuat database MB52...</span>";
 
-            try {
-                const response = await fetch(sheetUrl, { cache: 'no-store' });
-                if (!response.ok) throw new Error("Gagal terhubung ke server data");
-                const csvText = await response.text();
-
-                Papa.parse(csvText, {
-                    header: true,
-                    skipEmptyLines: true,
-                    complete: function(results) {
-                        // Filter: Hanya SOH > 0
-                        sheetData = results.data.filter(row => {
-                            const qtyRaw = (row['Unrestricted'] || row['Unrestricted Use'] || row['Unrestricted-Use'] || row['Qty'] || '0').toString().replace(/,/g, '');
-                            const qty = parseFloat(qtyRaw) || 0;
-                            return qty > 0;
-                        });
-                        statusHelp.innerHTML = `<span class='text-green-600 flex items-center gap-1'><i class='ph ph-check'></i> Database siap (${sheetData.length} item dg SOH). Ketik ID & tekan Cari.</span>`;
-                    },
-                    error: function(err) {
-                        console.error("Error parsing CSV:", err);
-                        statusHelp.innerHTML = "<span class='text-red-500 flex items-center gap-1'><i class='ph ph-warning'></i> Gagal memproses data MB52.</span>";
-                    }
-                });
-            } catch (err) {
-                console.error("Fetch error:", err);
-                statusHelp.innerHTML = "<span class='text-red-500 flex items-center gap-1'><i class='ph ph-warning'></i> Gagal memuat data. (Pastikan Sheet bersifat Publik 'Siapa Saja Memiliki Link').</span>";
-            }
+            Papa.parse(sheetUrl, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    // Filter: Hanya SOH > 0
+                    sheetData = results.data.filter(row => {
+                        const qtyRaw = (row['Unrestricted'] || row['Unrestricted Use'] || row['Unrestricted-Use'] || row['Qty'] || '0').toString().replace(/,/g, '');
+                        const qty = parseFloat(qtyRaw) || 0;
+                        return qty > 0;
+                    });
+                    statusHelp.innerHTML = `<span class='text-green-600 flex items-center gap-1'><i class='ph ph-check'></i> Database siap (${sheetData.length} item dg SOH). Ketik ID & tekan Cari.</span>`;
+                },
+                error: function(err) {
+                    console.error("Error parsing CSV:", err);
+                    statusHelp.innerHTML = "<span class='text-red-500 flex items-center gap-1'><i class='ph ph-warning'></i> Gagal memuat database (Cek koneksi internet atau Share Sheet).</span>";
+                }
+            });
         }
 
-        async function fetchHistoryData() {
+        function fetchHistoryData() {
             const historyUrl = "https://docs.google.com/spreadsheets/d/1ctGlztu9MfUX28P_I1MGmk8QYdu7UORHxQ8C-h0WZ6k/gviz/tq?tqx=out:csv&sheet=INSPEKSI&t=" + new Date().getTime();
             const tbody = document.getElementById('historyTableBody');
             
@@ -405,43 +420,32 @@
                 tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-slate-500 text-sm"><div class="flex flex-col items-center justify-center gap-2"><i class="ph ph-spinner-gap animate-spin text-2xl text-brand-500"></i> Memuat riwayat dari server...</div></td></tr>';
             }
 
-            try {
-                const response = await fetch(historyUrl, { cache: 'no-store' });
-                if (!response.ok) throw new Error("Gagal terhubung ke server riwayat");
-                const csvText = await response.text();
-
-                Papa.parse(csvText, {
-                    header: true,
-                    skipEmptyLines: true,
-                    complete: function(results) {
-                        // Petakan data dari Google Sheet ke dalam aplikasi, dibalik (reverse) agar yang terbaru ada di atas
-                        sessionHistory = results.data.map(row => {
-                            return {
-                                waktu: row['Waktu'] || '-',
-                                material: row['Material'] || '-',
-                                desc: row['Deskripsi Material'] || row['Deskripsi'] || row['Material Description'] || '-',
-                                mfrPart: row['Mfr Part Number'] || row['Mfr Part'] || '-',
-                                unrestricted: row['Unrestricted'] || 0,
-                                aktual: row['Aktual'] || 0,
-                                selisih: parseFloat(row['Selisih'] || 0)
-                            };
-                        }).reverse().slice(0, 100); 
-                        
-                        renderHistory();
-                    },
-                    error: function(err) {
-                        console.error("Error parsing history CSV:", err);
-                        if (tbody) {
-                            tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-red-500 text-sm"><i class="ph ph-warning"></i> Gagal membaca data riwayat dari server.</td></tr>';
-                        }
+            Papa.parse(historyUrl, {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    sessionHistory = results.data.map(row => {
+                        return {
+                            waktu: row['Waktu'] || '-',
+                            material: row['Material'] || '-',
+                            desc: row['Deskripsi Material'] || row['Deskripsi'] || row['Material Description'] || '-',
+                            mfrPart: row['Mfr Part Number'] || row['Mfr Part'] || '-',
+                            unrestricted: row['Unrestricted'] || 0,
+                            aktual: row['Aktual'] || 0,
+                            selisih: parseFloat(row['Selisih'] || 0)
+                        };
+                    }).reverse().slice(0, 100); 
+                    
+                    renderHistory();
+                },
+                error: function(err) {
+                    console.error("Error parsing history CSV:", err);
+                    if (tbody) {
+                        tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-red-500 text-sm"><i class="ph ph-warning"></i> Gagal membaca data riwayat dari server. Pastikan Sheet Publik.</td></tr>';
                     }
-                });
-            } catch (err) {
-                console.error("Error fetching history:", err);
-                if (tbody) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-red-500 text-sm"><i class="ph ph-warning"></i> Gagal memuat riwayat. (Pastikan Sheet Publik).</td></tr>';
                 }
-            }
+            });
         }
 
         const materialInput = document.getElementById('material');
@@ -562,11 +566,17 @@
         btnSimpan.addEventListener('click', async () => {
             try {
                 const pelaksanaVal = document.getElementById('pelaksana').value.trim();
+                const boxVal = document.getElementById('boxSelection').value;
                 const alokasiVal = document.getElementById('alokasiPart').value;
 
                 if (!pelaksanaVal) {
                     alert("PERHATIAN: Nama Pelaksana wajib diisi!");
                     document.getElementById('pelaksana').focus();
+                    return;
+                }
+                if (!boxVal) {
+                    alert("PERHATIAN: Box wajib dipilih!");
+                    document.getElementById('boxSelection').focus();
                     return;
                 }
                 if (!alokasiVal) {
@@ -612,12 +622,22 @@
 
                 const fetchPromises = payloads.map(dataItem => {
                     const historyObj = { 
-                        waktu: strWaktu, pelaksana: pelaksanaVal, material: dataItem.material,
-                        alokasi: alokasiVal, catatan: catatanVal, aktual: dataItem.aktual,
-                        selisih: dataItem.selisih, sloc: dataItem.sloc, bin: dataItem.bin,
-                        desc: dataItem.desc, mfrPart: dataItem.mfrPart, matType: dataItem.matType,
-                        batch: dataItem.batch, unrestricted: dataItem.unrestricted,
-                        foto: currentPhotoUrl ? currentPhotoUrl : 'Tidak'
+                        Waktu: strWaktu, 
+                        Pelaksana: pelaksanaVal, 
+                        Material: dataItem.material,
+                        Deskripsi: dataItem.desc,
+                        MfrPart: dataItem.mfrPart,
+                        MatType: dataItem.matType,
+                        Sloc: dataItem.sloc,
+                        Batch: dataItem.batch,
+                        Bin: dataItem.bin,
+                        Unrestricted: dataItem.unrestricted,
+                        Aktual: dataItem.aktual,
+                        Selisih: dataItem.selisih,
+                        Box: boxVal,
+                        Alokasi: alokasiVal, 
+                        Catatan: catatanVal, 
+                        Foto: currentPhotoUrl ? currentPhotoUrl : 'Tidak'
                     };
                     
                     const params = new URLSearchParams();
@@ -632,7 +652,6 @@
 
                 await Promise.all(fetchPromises);
                 
-                // Panggil ulang data riwayat dari server agar hasilnya terlihat
                 fetchHistoryData();
                 showModal();
                 restoreButton(btnSimpan, originalBtnHtml);
@@ -691,7 +710,6 @@
             
             const searchTerm = (searchInput ? searchInput.value.trim().toLowerCase() : '');
             
-            // Filter berdasarkan Material, Description, dan Mfr Part
             const filteredHistory = sessionHistory.filter(item => {
                 if (!searchTerm) return true;
                 const mat = (item.material || '').toLowerCase();
