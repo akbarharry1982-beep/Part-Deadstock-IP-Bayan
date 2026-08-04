@@ -81,7 +81,7 @@
                     </h2>
                     <p class="text-sm text-slate-500 mt-1">Lengkapi data pengecekan fisik deadstock beserta data inventory SAP.</p>
                 </div>
-
+                
                 <form id="inspeksiForm" class="p-6 space-y-8">
                     <!-- Informasi Dasar -->
                     <div>
@@ -149,7 +149,7 @@
                             </div>
                         </div>
                     </div>
-
+                    
                     <div>
                         <h3 class="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4 pb-2 border-b border-slate-100">Alokasi & Catatan</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
@@ -202,7 +202,7 @@
                             </div>
                         </div>
                     </div>
-
+                    
                     <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
                         <button type="button" onclick="resetForm()" class="px-5 py-2.5 text-sm font-medium text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 hover:text-slate-900 transition-colors">
                             Reset Form
@@ -252,7 +252,7 @@
         </div>
 
     </main>
-
+    
     <div id="successModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity duration-300 flex items-center justify-center">
         <div class="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-sm w-full mx-4 transform scale-95 transition-transform duration-300" id="modalContent">
             <div class="p-6 text-center">
@@ -298,9 +298,9 @@
 
         document.addEventListener("DOMContentLoaded", () => {
             fetchSheetData();
+            fetchHistoryData();
             updateLiveClock();
             setInterval(updateLiveClock, 60000);
-            renderHistory();
 
             // Handling Foto (Kompresi)
             btnKamera.addEventListener('click', () => inputKamera.click());
@@ -355,7 +355,6 @@
                     if(!historySearchInput.classList.contains('hidden')){
                         historySearchInput.focus();
                     } else {
-                        // Bersihkan pencarian jika disembunyikan
                         historySearchInput.value = '';
                         renderHistory();
                     }
@@ -363,32 +362,88 @@
                 historySearchInput.addEventListener('input', renderHistory);
             }
         });
-
-        function fetchSheetData() {
-            // Menggunakan gviz API Google Sheets yang mendukung lintas-situs (CORS) dengan baik
+        
+        async function fetchSheetData() {
+            // Menggunakan API modern 'fetch' untuk menghindari blokir CORS di HP
             const sheetUrl = "https://docs.google.com/spreadsheets/d/1ctGlztu9MfUX28P_I1MGmk8QYdu7UORHxQ8C-h0WZ6k/gviz/tq?tqx=out:csv&gid=86846704&t=" + new Date().getTime();
             const statusHelp = document.getElementById('materialHelp');
             
             statusHelp.innerHTML = "<span class='text-amber-500 flex items-center gap-1'><i class='ph ph-spinner-gap animate-spin'></i> Memuat database MB52...</span>";
 
-            Papa.parse(sheetUrl, {
-                download: true,
-                header: true,
-                skipEmptyLines: true,
-                complete: function(results) {
-                    // Filter: Hanya SOH > 0
-                    sheetData = results.data.filter(row => {
-                        const qtyRaw = (row['Unrestricted'] || row['Unrestricted Use'] || row['Unrestricted-Use'] || row['Qty'] || '0').toString().replace(/,/g, '');
-                        const qty = parseFloat(qtyRaw) || 0;
-                        return qty > 0;
-                    });
-                    statusHelp.innerHTML = `<span class='text-green-600 flex items-center gap-1'><i class='ph ph-check'></i> Database siap (${sheetData.length} item dg SOH). Ketik ID & tekan Cari.</span>`;
-                },
-                error: function(err) {
-                    console.error("Error parsing CSV:", err);
-                    statusHelp.innerHTML = "<span class='text-red-500 flex items-center gap-1'><i class='ph ph-warning'></i> Gagal memuat database (Jaringan terputus / Blokir Browser).</span>";
+            try {
+                const response = await fetch(sheetUrl);
+                if (!response.ok) throw new Error("Gagal terhubung ke server data");
+                const csvText = await response.text();
+
+                Papa.parse(csvText, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        // Filter: Hanya SOH > 0
+                        sheetData = results.data.filter(row => {
+                            const qtyRaw = (row['Unrestricted'] || row['Unrestricted Use'] || row['Unrestricted-Use'] || row['Qty'] || '0').toString().replace(/,/g, '');
+                            const qty = parseFloat(qtyRaw) || 0;
+                            return qty > 0;
+                        });
+                        statusHelp.innerHTML = `<span class='text-green-600 flex items-center gap-1'><i class='ph ph-check'></i> Database siap (${sheetData.length} item dg SOH). Ketik ID & tekan Cari.</span>`;
+                    },
+                    error: function(err) {
+                        console.error("Error parsing CSV:", err);
+                        statusHelp.innerHTML = "<span class='text-red-500 flex items-center gap-1'><i class='ph ph-warning'></i> Gagal memproses data MB52.</span>";
+                    }
+                });
+            } catch (err) {
+                console.error("Fetch error:", err);
+                statusHelp.innerHTML = "<span class='text-red-500 flex items-center gap-1'><i class='ph ph-warning'></i> Gagal memuat database (Tolak akses / jaringan terputus).</span>";
+            }
+        }
+
+        async function fetchHistoryData() {
+            // Menggunakan API modern 'fetch' untuk menarik data riwayat dari Sheet INSPEKSI
+            const historyUrl = "https://docs.google.com/spreadsheets/d/1ctGlztu9MfUX28P_I1MGmk8QYdu7UORHxQ8C-h0WZ6k/gviz/tq?tqx=out:csv&sheet=INSPEKSI&t=" + new Date().getTime();
+            const tbody = document.getElementById('historyTableBody');
+            
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-slate-500 text-sm"><div class="flex flex-col items-center justify-center gap-2"><i class="ph ph-spinner-gap animate-spin text-2xl text-brand-500"></i> Memuat riwayat dari server...</div></td></tr>';
+            }
+
+            try {
+                const response = await fetch(historyUrl);
+                if (!response.ok) throw new Error("Gagal terhubung ke server riwayat");
+                const csvText = await response.text();
+
+                Papa.parse(csvText, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        // Petakan data dari Google Sheet ke dalam aplikasi, dibalik (reverse) agar yang terbaru ada di atas
+                        sessionHistory = results.data.map(row => {
+                            return {
+                                waktu: row['Waktu'] || '-',
+                                material: row['Material'] || '-',
+                                desc: row['Deskripsi Material'] || row['Deskripsi'] || row['Material Description'] || '-',
+                                mfrPart: row['Mfr Part Number'] || row['Mfr Part'] || '-',
+                                unrestricted: row['Unrestricted'] || 0,
+                                aktual: row['Aktual'] || 0,
+                                selisih: parseFloat(row['Selisih'] || 0)
+                            };
+                        }).reverse().slice(0, 100); // Batasi hanya menampilkan 100 data terakhir agar ringan
+                        
+                        renderHistory();
+                    },
+                    error: function(err) {
+                        console.error("Error parsing history CSV:", err);
+                        if (tbody) {
+                            tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-red-500 text-sm"><i class="ph ph-warning"></i> Gagal membaca data riwayat dari server.</td></tr>';
+                        }
+                    }
+                });
+            } catch (err) {
+                console.error("Error fetching history:", err);
+                if (tbody) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-red-500 text-sm"><i class="ph ph-warning"></i> Gagal memuat riwayat server. Pastikan internet stabil & Sheet publik.</td></tr>';
                 }
-            });
+            }
         }
 
         const materialInput = document.getElementById('material');
@@ -527,7 +582,6 @@
                 
                 rows.forEach(tr => {
                     const actualInput = tr.querySelector('.row-actual-input');
-                    // Hanya simpan baris yang input aktualnya diisi angka
                     if (actualInput && actualInput.value.trim() !== '') {
                         payloads.push({
                             aktual: parseFloat(actualInput.value) || 0,
@@ -558,7 +612,6 @@
                 const strWaktu = now.toLocaleString('id-ID');
                 const catatanVal = document.getElementById('catatan').value;
 
-                // Mengirim semua data baris secara bersamaan
                 const fetchPromises = payloads.map(dataItem => {
                     const historyObj = { 
                         waktu: strWaktu, pelaksana: pelaksanaVal, material: dataItem.material,
@@ -572,8 +625,6 @@
                     const params = new URLSearchParams();
                     Object.keys(historyObj).forEach(key => params.append(key, historyObj[key]));
                     
-                    sessionHistory.unshift(historyObj); // Simpan ke Riwayat UI
-
                     return fetch(GAS_URL, {
                         method: 'POST', mode: 'no-cors',
                         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -583,7 +634,8 @@
 
                 await Promise.all(fetchPromises);
                 
-                renderHistory();
+                // Panggil ulang data riwayat dari server agar hasilnya terlihat
+                fetchHistoryData();
                 showModal();
                 restoreButton(btnSimpan, originalBtnHtml);
 
@@ -654,7 +706,7 @@
             countEl.textContent = `${filteredHistory.length} Data`;
             
             if (filteredHistory.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-slate-400 text-sm">Belum ada data atau tidak ada yang cocok dengan filter.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-slate-400 text-sm">Belum ada data di server atau tidak ada yang cocok dengan filter.</td></tr>';
                 return;
             }
             
