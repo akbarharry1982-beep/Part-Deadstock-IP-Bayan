@@ -215,6 +215,7 @@
             </div>
         </div>
 
+        <!-- RIWAYAT SECTION -->
         <div class="w-full mt-8">
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
@@ -272,6 +273,8 @@
         let sheetData = [];
         let currentPhotoUrl = null;
         let sessionHistory = []; 
+        
+        // Link Apps Script terbaru
         const GAS_URL = "https://script.google.com/macros/s/AKfycbzd6Ov_08qD6TBqc3KVRYUcrTi0-e7iqmYf3Y3IgyT9KZvqo99skgFy_5VfdfWSwMcg/exec";
 
         // Element Referensi
@@ -362,7 +365,8 @@
         });
 
         function fetchSheetData() {
-            const sheetUrl = "https://docs.google.com/spreadsheets/d/1ctGlztu9MfUX28P_I1MGmk8QYdu7UORHxQ8C-h0WZ6k/export?format=csv&gid=86846704";
+            // Menggunakan gviz API Google Sheets yang mendukung lintas-situs (CORS) dengan baik
+            const sheetUrl = "https://docs.google.com/spreadsheets/d/1ctGlztu9MfUX28P_I1MGmk8QYdu7UORHxQ8C-h0WZ6k/gviz/tq?tqx=out:csv&gid=86846704&t=" + new Date().getTime();
             const statusHelp = document.getElementById('materialHelp');
             
             statusHelp.innerHTML = "<span class='text-amber-500 flex items-center gap-1'><i class='ph ph-spinner-gap animate-spin'></i> Memuat database MB52...</span>";
@@ -382,7 +386,7 @@
                 },
                 error: function(err) {
                     console.error("Error parsing CSV:", err);
-                    statusHelp.innerHTML = "<span class='text-red-500 flex items-center gap-1'><i class='ph ph-warning'></i> Gagal memuat database.</span>";
+                    statusHelp.innerHTML = "<span class='text-red-500 flex items-center gap-1'><i class='ph ph-warning'></i> Gagal memuat database (Jaringan terputus / Blokir Browser).</span>";
                 }
             });
         }
@@ -410,7 +414,7 @@
 
             let matches = [];
             if (!searchVal) {
-                matches = sheetData.slice(0, 150);
+                matches = sheetData.slice(0, 150); // Limit jika kosong
             } else {
                 matches = sheetData.filter(row => {
                     const mat = (row['Material'] || row['Material Number'] || row['Material ID'] || '').toString().trim().toUpperCase();
@@ -464,6 +468,7 @@
                     matchBody.appendChild(tr);
                 });
 
+                // Event listener untuk perhitungan selisih otomatis
                 matchBody.querySelectorAll('.row-actual-input').forEach(input => {
                     input.addEventListener('input', function() {
                         const tr = this.closest('tr');
@@ -522,6 +527,7 @@
                 
                 rows.forEach(tr => {
                     const actualInput = tr.querySelector('.row-actual-input');
+                    // Hanya simpan baris yang input aktualnya diisi angka
                     if (actualInput && actualInput.value.trim() !== '') {
                         payloads.push({
                             aktual: parseFloat(actualInput.value) || 0,
@@ -539,7 +545,7 @@
                 });
 
                 if (payloads.length === 0) {
-                    alert("PERHATIAN: Anda belum mengisi angka Aktual pada tabel pencarian!");
+                    alert("PERHATIAN: Anda belum mengisi angka Aktual di baris mana pun!");
                     return;
                 }
 
@@ -552,6 +558,7 @@
                 const strWaktu = now.toLocaleString('id-ID');
                 const catatanVal = document.getElementById('catatan').value;
 
+                // Mengirim semua data baris secara bersamaan
                 const fetchPromises = payloads.map(dataItem => {
                     const historyObj = { 
                         waktu: strWaktu, pelaksana: pelaksanaVal, material: dataItem.material,
@@ -565,7 +572,7 @@
                     const params = new URLSearchParams();
                     Object.keys(historyObj).forEach(key => params.append(key, historyObj[key]));
                     
-                    sessionHistory.unshift(historyObj); // Update UI History
+                    sessionHistory.unshift(historyObj); // Simpan ke Riwayat UI
 
                     return fetch(GAS_URL, {
                         method: 'POST', mode: 'no-cors',
@@ -582,7 +589,7 @@
 
             } catch (err) {
                 console.error("Terjadi error sistem:", err);
-                alert("GAGAL MENYIMPAN: Mohon cek koneksi internet Anda atau coba lagi. (" + err.message + ")");
+                alert("GAGAL MENYIMPAN: Mohon cek koneksi internet Anda atau coba lagi beberapa saat. (" + err.message + ")");
                 restoreButton(btnSimpan, '<i class="ph ph-floppy-disk text-lg"></i> Simpan Data');
             }
         });
@@ -632,12 +639,11 @@
             
             if (!tbody || !countEl) return;
             
-            // Ambil kata kunci pencarian
             const searchTerm = (searchInput ? searchInput.value.trim().toLowerCase() : '');
             
-            // Filter data riwayat (Material, Desc, Mfr Part)
+            // Filter berdasarkan Material, Description, dan Mfr Part
             const filteredHistory = sessionHistory.filter(item => {
-                if (!searchTerm) return true; // Jika kosong, tampilkan semua
+                if (!searchTerm) return true;
                 const mat = (item.material || '').toLowerCase();
                 const desc = (item.desc || '').toLowerCase();
                 const mfr = (item.mfrPart || '').toLowerCase();
@@ -648,7 +654,7 @@
             countEl.textContent = `${filteredHistory.length} Data`;
             
             if (filteredHistory.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-slate-400 text-sm">Belum ada data atau tidak ada yang cocok dengan filter pencarian.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-slate-400 text-sm">Belum ada data atau tidak ada yang cocok dengan filter.</td></tr>';
                 return;
             }
             
