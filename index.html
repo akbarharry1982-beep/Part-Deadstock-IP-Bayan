@@ -72,7 +72,6 @@
     </header>
 
     <main class="flex-grow max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
-        
         <div class="w-full">
             <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                 <div class="px-6 py-5 border-b border-slate-100 bg-slate-50/50">
@@ -83,6 +82,7 @@
                 </div>
                 
                 <form id="inspeksiForm" class="p-6 space-y-8">
+                    <!-- Informasi Umum -->
                     <div>
                         <h3 class="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4 pb-2 border-b border-slate-100">Informasi Umum</h3>
                         <div class="grid grid-cols-1 gap-5">
@@ -116,7 +116,7 @@
                                         <i class="ph ph-magnifying-glass"></i> Cari
                                     </button>
                                 </div>
-                                <p id="materialHelp" class="text-[10px] text-slate-500 mt-1">Ketik ID / Nama Material / Mfr Part Number lalu tekan Cari.</p>
+                                <p id="materialHelp" class="text-[10px] text-slate-500 mt-1">Ketik ID / Nama / Mfr Part / Storage Bin lalu tekan Cari, atau kosongkan untuk semua.</p>
                             </div>
                             
                             <div id="matchSelectionContainer" class="hidden mt-1 mb-2">
@@ -153,30 +153,30 @@
                         <h3 class="text-sm font-semibold text-slate-900 uppercase tracking-wider mb-4 pb-2 border-b border-slate-100">Alokasi & Catatan</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
                             
-                            <!-- Box Selection (New Field) -->
+                            <!-- Box Selection -->
                             <div class="md:col-span-2">
                                 <label for="boxSelection" class="block text-sm font-medium text-slate-700 mb-1">Box <span class="text-brand-500">*</span></label>
-                                <div class="relative">
-                                    <select id="boxSelection"
-                                        class="block w-full px-3 py-2.5 rounded-lg border border-slate-300 bg-slate-50 text-sm focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all outline-none appearance-none">
-                                        <option value="" disabled selected>Pilih Box...</option>
-                                        <option value="Box 1">Box 1</option>
-                                        <option value="Box 2">Box 2</option>
-                                        <option value="Box 3">Box 3</option>
-                                        <option value="Box 4">Box 4</option>
-                                        <option value="Box 5">Box 5</option>
-                                        <option value="Box 6">Box 6</option>
-                                        <option value="Box 7">Box 7</option>
-                                        <option value="Box 8">Box 8</option>
-                                        <option value="Box 9">Box 9</option>
-                                        <option value="Box 10">Box 10</option>
-                                    </select>
-                                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
-                                        <i class="ph ph-caret-down"></i>
+                                <div class="space-y-2">
+                                    <div class="relative">
+                                        <select id="boxSelection"
+                                            class="block w-full px-3 py-2.5 rounded-lg border border-slate-300 bg-slate-50 text-sm focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all outline-none appearance-none">
+                                            <option value="" disabled selected>Pilih Box...</option>
+                                            <option value="Box 1">Box 1</option>
+                                            <option value="Box 2">Box 2</option>
+                                            <option value="Box 3">Box 3</option>
+                                            <option value="Box 4">Box 4</option>
+                                            <option value="Box 5">Box 5</option>
+                                            <option value="Lainnya">Lainnya (Ketik Manual)...</option>
+                                        </select>
+                                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                                            <i class="ph ph-caret-down"></i>
+                                        </div>
                                     </div>
+                                    <input type="text" id="boxLainnya" placeholder="Ketik nama atau nomor box..." class="hidden w-full px-3 py-2.5 rounded-lg border border-slate-300 bg-white text-sm focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all outline-none">
                                 </div>
                             </div>
 
+                            <!-- Alokasi Selection -->
                             <div class="md:col-span-2">
                                 <label for="alokasiPart" class="block text-sm font-medium text-slate-700 mb-1">Alokasi Part <span class="text-brand-500">*</span></label>
                                 <div class="relative">
@@ -195,6 +195,50 @@
                                 </div>
                             </div>
 
+                            <!-- Site Tujuan Selection -->
+                            <div class="md:col-span-2">
+                                <label for="siteTujuan" class="block text-sm font-medium text-slate-700 mb-1">Site Tujuan <span class="text-brand-500">*</span></label>
+                                <div class="relative">
+                                    <select id="siteTujuan"
+                                        class="block w-full px-3 py-2.5 rounded-lg border border-slate-300 bg-slate-50 text-sm focus:bg-white focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 transition-all outline-none appearance-none">
+                                        <option value="" disabled selected>Pilih Site Tujuan...</option>
+                                        <option value="PL01 - MSJ">PL01 - MSJ</option>
+                                        <option value="PL02 - TDM">PL02 - TDM</option>
+                                        <option value="PL03 - SBB">PL03 - SBB</option>
+                                        <option value="PL04 - AGM">PL04 - AGM</option>
+                                        <option value="PL05 - PMSS">PL05 - PMSS</option>
+                                        <option value="PL06 - MAS">PL06 - MAS</option>
+                                        <option value="PL07 - CMX MSJ">PL07 - CMX MSJ</option>
+                                        <option value="PL08 - CMX PLRN">PL08 - CMX PLRN</option>
+                                        <option value="PL09 - CMX AGM">PL09 - CMX AGM</option>
+                                        <option value="PL10 - BSSR 2">PL10 - BSSR 2</option>
+                                        <option value="PL11 - PKM">PL11 - PKM</option>
+                                        <option value="PL12 - SMD">PL12 - SMD</option>
+                                        <option value="PL13 - JKT">PL13 - JKT</option>
+                                        <option value="PL14 - KUP">PL14 - KUP</option>
+                                        <option value="PL15 - TAJ">PL15 - TAJ</option>
+                                        <option value="PL16 - MME">PL16 - MME</option>
+                                        <option value="PL17 - MBL MINNING">PL17 - MBL MINNING</option>
+                                        <option value="PL18 - CMX MAS">PL18 - CMX MAS</option>
+                                        <option value="PL19 - CMX CILEGON">PL19 - CMX CILEGON</option>
+                                        <option value="PL20 - SAS">PL20 - SAS</option>
+                                        <option value="PL21 - BSEE">PL21 - BSEE</option>
+                                        <option value="PL22 - BRN">PL22 - BRN</option>
+                                        <option value="PL23 - KUD">PL23 - KUD</option>
+                                        <option value="PL24 - BYN">PL24 - BYN</option>
+                                        <option value="PL25 - CDI">PL25 - CDI</option>
+                                        <option value="PL26 - MHU">PL26 - MHU</option>
+                                        <option value="PL27 - MBL HAULING">PL27 - MBL HAULING</option>
+                                        <option value="PL28 - DC PLRN">PL28 - DC PLRN</option>
+                                        <option value="PL31 - MHU">PL31 - MHU</option>
+                                        <option value="PL32 - MHU">PL32 - MHU</option>
+                                    </select>
+                                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                                        <i class="ph ph-caret-down"></i>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="md:col-span-2">
                                 <label for="catatan" class="block text-sm font-medium text-slate-700 mb-1">Catatan</label>
                                 <textarea id="catatan" rows="2" placeholder="Tambahkan catatan jika ada..."
@@ -204,8 +248,9 @@
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Foto CCP (Opsional)</label>
                                 <div class="flex flex-wrap items-center gap-3">
-                                    <input type="file" id="inputKamera" accept="image/*" capture="environment" class="hidden">
-                                    <input type="file" id="inputGaleri" accept="image/*" class="hidden">
+                                    <!-- Accept spesifik untuk memaksa konversi otomatis di iPhone/Android -->
+                                    <input type="file" id="inputKamera" accept="image/jpeg, image/png" capture="environment" class="hidden">
+                                    <input type="file" id="inputGaleri" accept="image/jpeg, image/png" class="hidden">
                                     
                                     <div id="actionButtonsFoto" class="flex gap-2">
                                         <button type="button" id="btnKamera" class="px-4 py-2 bg-slate-800 text-white rounded-lg shadow-sm hover:bg-slate-700 transition-colors flex items-center gap-2 text-sm font-medium">
@@ -273,7 +318,6 @@
                 </div>
             </div>
         </div>
-
     </main>
     
     <div id="successModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden opacity-0 transition-opacity duration-300 flex items-center justify-center">
@@ -298,7 +342,7 @@
         let sessionHistory = []; 
         
         // Link Apps Script terbaru
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbyxNi686b4_29XNfH1CQYD7VH_MZXVRkBGkuc4ir-SX4p2lKKN0YHHcd-8odn5qQukS/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbwF6_ThKNkuTt1XIsSGmMljPFt7-ZKo6RIzXJnspIdwXtzI0v20b2x8q9qcAXt0u9ce/exec";
 
         // Element Referensi
         const form = document.getElementById('inspeksiForm');
@@ -315,43 +359,78 @@
         const btnHapusFoto = document.getElementById('btnHapusFoto');
         const actionButtonsFoto = document.getElementById('actionButtonsFoto');
         
-        // Elemen Filter Riwayat
         const btnToggleFilter = document.getElementById('btnToggleFilter');
         const historySearchInput = document.getElementById('historySearchInput');
 
         document.addEventListener("DOMContentLoaded", () => {
             fetchSheetData();
-            fetchHistoryData();
+            fetchHistoryData(); // Aktifkan ulang fungsi pembacaan riwayat
             updateLiveClock();
             setInterval(updateLiveClock, 60000);
 
-            // Handling Foto (Kompresi)
+            // Handling Foto (Kompresi Iteratif Otomatis < 5MB dengan Loading UI)
             btnKamera.addEventListener('click', () => inputKamera.click());
             btnGaleri.addEventListener('click', () => inputGaleri.click());
             
             function handleImageSelection(e) {
                 const file = e.target.files[0];
                 if (file) {
+                    const validTypes = ['image/jpeg', 'image/png'];
+                    if (!validTypes.includes(file.type)) {
+                        alert("Format tidak didukung! Mohon gunakan foto dengan format JPG atau PNG.");
+                        e.target.value = ''; 
+                        return;
+                    }
+
+                    // Menampilkan UI Loading karena kompresi foto besar memakan waktu
+                    const originalActionHtml = actionButtonsFoto.innerHTML;
+                    actionButtonsFoto.innerHTML = '<span class="text-sm font-medium text-brand-600 flex items-center gap-2 px-2 py-2"><i class="ph ph-spinner-gap animate-spin text-lg"></i> Memproses ukuran...</span>';
+
                     const reader = new FileReader();
                     reader.onload = function(event) {
                         const img = new Image();
                         img.onload = function() {
-                            const MAX_WIDTH = 800;
-                            let width = img.width;
-                            let height = img.height;
-                            if (width > MAX_WIDTH) {
-                                height = Math.round((height * MAX_WIDTH) / width);
-                                width = MAX_WIDTH;
-                            }
-                            const canvas = document.createElement('canvas');
-                            canvas.width = width;
-                            canvas.height = height;
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(img, 0, 0, width, height);
-                            currentPhotoUrl = canvas.toDataURL('image/jpeg', 0.7);
-                            imgPreview.src = currentPhotoUrl;
-                            previewContainer.classList.remove('hidden');
-                            actionButtonsFoto.classList.add('hidden');
+                            let quality = 0.9;
+                            let maxWidth = 1600; 
+                            let resultDataUrl = "";
+                            const format = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
+                            
+                            const compressToLimit = () => {
+                                let width = img.width;
+                                let height = img.height;
+
+                                if (width > maxWidth) {
+                                    height = Math.round((height * maxWidth) / width);
+                                    width = maxWidth;
+                                }
+
+                                const canvas = document.createElement('canvas');
+                                canvas.width = width;
+                                canvas.height = height;
+                                const ctx = canvas.getContext('2d');
+                                ctx.drawImage(img, 0, 0, width, height);
+                                
+                                resultDataUrl = canvas.toDataURL(format, quality);
+                                
+                                const base64Length = resultDataUrl.length - (resultDataUrl.indexOf(',') + 1);
+                                const sizeInMB = (Math.ceil((base64Length * 3) / 4)) / (1024 * 1024);
+                                
+                                // Limit ukuran diset di 4.8MB (batas aman Apps Script 5MB)
+                                if (sizeInMB > 4.8 && maxWidth > 600) {
+                                    maxWidth -= 200; 
+                                    if (format === 'image/jpeg' && quality > 0.4) quality -= 0.1;
+                                    compressToLimit(); // Ulangi jika masih kebesaran
+                                } else {
+                                    currentPhotoUrl = resultDataUrl;
+                                    imgPreview.src = currentPhotoUrl;
+                                    previewContainer.classList.remove('hidden');
+                                    actionButtonsFoto.innerHTML = originalActionHtml; // Kembalikan tombol asli
+                                    actionButtonsFoto.classList.add('hidden');
+                                }
+                            };
+                            
+                            // Delay 50ms agar teks "Memproses..." sempat muncul di layar HP sebelum CPU bekerja
+                            setTimeout(compressToLimit, 50); 
                         };
                         img.src = event.target.result;
                     };
@@ -384,9 +463,25 @@
                 });
                 historySearchInput.addEventListener('input', renderHistory);
             }
+            
+            // Logika Dropdown Box 'Lainnya'
+            const boxSelection = document.getElementById('boxSelection');
+            const boxLainnya = document.getElementById('boxLainnya');
+            if(boxSelection && boxLainnya) {
+                boxSelection.addEventListener('change', function() {
+                    if (this.value === 'Lainnya') {
+                        boxLainnya.classList.remove('hidden');
+                        boxLainnya.focus();
+                    } else {
+                        boxLainnya.classList.add('hidden');
+                        boxLainnya.value = '';
+                    }
+                });
+            }
         });
         
         function fetchSheetData() {
+            // MB52 Database 
             const sheetUrl = "https://docs.google.com/spreadsheets/d/1ctGlztu9MfUX28P_I1MGmk8QYdu7UORHxQ8C-h0WZ6k/gviz/tq?tqx=out:csv&gid=86846704&t=" + new Date().getTime();
             const statusHelp = document.getElementById('materialHelp');
             
@@ -397,21 +492,21 @@
                 header: true,
                 skipEmptyLines: true,
                 complete: function(results) {
-                    // Filter: Hanya SOH > 0
                     sheetData = results.data.filter(row => {
                         const qtyRaw = (row['Unrestricted'] || row['Unrestricted Use'] || row['Unrestricted-Use'] || row['Qty'] || '0').toString().replace(/,/g, '');
                         const qty = parseFloat(qtyRaw) || 0;
-                        return qty > 0;
+                        return qty > 0; 
                     });
-                    statusHelp.innerHTML = `<span class='text-green-600 flex items-center gap-1'><i class='ph ph-check'></i> Database siap (${sheetData.length} item dg SOH). Ketik ID & tekan Cari.</span>`;
+                    statusHelp.innerHTML = `<span class='text-green-600 flex items-center gap-1'><i class='ph ph-check'></i> Database siap (${sheetData.length} item dg SOH). Ketik parameter & tekan Cari.</span>`;
                 },
                 error: function(err) {
                     console.error("Error parsing CSV:", err);
-                    statusHelp.innerHTML = "<span class='text-red-500 flex items-center gap-1'><i class='ph ph-warning'></i> Gagal memuat database (Cek koneksi internet atau Share Sheet).</span>";
+                    statusHelp.innerHTML = "<span class='text-red-500 flex items-center gap-1'><i class='ph ph-warning'></i> Gagal memuat database.</span>";
                 }
             });
         }
 
+        // FUNGSI MEMBACA RIWAYAT (Beserta perbaikan deteksi kolom Waktu otomatis)
         function fetchHistoryData() {
             const historyUrl = "https://docs.google.com/spreadsheets/d/1ctGlztu9MfUX28P_I1MGmk8QYdu7UORHxQ8C-h0WZ6k/gviz/tq?tqx=out:csv&sheet=INSPEKSI&t=" + new Date().getTime();
             const tbody = document.getElementById('historyTableBody');
@@ -426,8 +521,20 @@
                 skipEmptyLines: true,
                 complete: function(results) {
                     sessionHistory = results.data.map(row => {
+                        // FIX WAKTU: Baca otomatis dari kolom manapun yang mengandung Waktu, Timestamp, atau ambil kolom A langsung
+                        const keys = Object.keys(row);
+                        let waktuDitemukan = '-';
+                        if (row['Waktu']) {
+                            waktuDitemukan = row['Waktu'];
+                        } else if (row['Timestamp']) {
+                            waktuDitemukan = row['Timestamp'];
+                        } else if (keys.length > 0) {
+                            // Backup: Paksa ambil data dari urutan kolom paling pertama (Kolom A)
+                            waktuDitemukan = row[keys[0]];
+                        }
+
                         return {
-                            waktu: row['Waktu'] || '-',
+                            waktu: waktuDitemukan,
                             material: row['Material'] || '-',
                             desc: row['Deskripsi Material'] || row['Deskripsi'] || row['Material Description'] || '-',
                             mfrPart: row['Mfr Part Number'] || row['Mfr Part'] || '-',
@@ -442,7 +549,7 @@
                 error: function(err) {
                     console.error("Error parsing history CSV:", err);
                     if (tbody) {
-                        tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-red-500 text-sm"><i class="ph ph-warning"></i> Gagal membaca data riwayat dari server. Pastikan Sheet Publik.</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-red-500 text-sm"><i class="ph ph-warning"></i> Gagal membaca data riwayat dari server.</td></tr>';
                     }
                 }
             });
@@ -471,14 +578,15 @@
 
             let matches = [];
             if (!searchVal) {
-                matches = sheetData.slice(0, 150); // Limit jika kosong
+                matches = sheetData.slice(0, 150); 
             } else {
                 matches = sheetData.filter(row => {
                     const mat = (row['Material'] || row['Material Number'] || row['Material ID'] || '').toString().trim().toUpperCase();
                     const desc = (row['Material Description'] || row['Description'] || '').toString().trim().toUpperCase();
                     const mfrPart = (row['Mfr Part Number'] || row['Mfr Part No'] || row['MPN'] || '').toString().trim().toUpperCase();
+                    const bin = (row['Storage Bin'] || row['Bin'] || '').toString().trim().toUpperCase();
                     
-                    return mat === searchVal || mat.replace(/^0+/, '') === searchVal.replace(/^0+/, '') || mat.includes(searchVal) || desc.includes(searchVal) || mfrPart.includes(searchVal);
+                    return mat === searchVal || mat.replace(/^0+/, '') === searchVal.replace(/^0+/, '') || mat.includes(searchVal) || desc.includes(searchVal) || mfrPart.includes(searchVal) || bin.includes(searchVal);
                 });
             }
 
@@ -525,7 +633,6 @@
                     matchBody.appendChild(tr);
                 });
 
-                // Event listener untuk perhitungan selisih otomatis
                 matchBody.querySelectorAll('.row-actual-input').forEach(input => {
                     input.addEventListener('input', function() {
                         const tr = this.closest('tr');
@@ -550,7 +657,7 @@
                 helpText.innerHTML = `<span class='text-blue-600 flex items-center gap-1'><i class='ph ph-info'></i> Menampilkan ${matches.length} baris. Silakan isi angka aktual.</span>`;
             } else {
                 icon.innerHTML = '<i class="ph ph-warning-circle text-red-500 text-lg"></i>';
-                helpText.innerHTML = `<span class='text-red-500 flex items-center gap-1'><i class='ph ph-x'></i> Data tidak ditemukan di MB52.</span>`;
+                helpText.innerHTML = `<span class='text-red-500 flex items-center gap-1'><i class='ph ph-x'></i> Data tidak ditemukan.</span>`;
             }
         }
 
@@ -566,8 +673,18 @@
         btnSimpan.addEventListener('click', async () => {
             try {
                 const pelaksanaVal = document.getElementById('pelaksana').value.trim();
-                const boxVal = document.getElementById('boxSelection').value;
+                let boxVal = document.getElementById('boxSelection').value;
                 const alokasiVal = document.getElementById('alokasiPart').value;
+                const siteTujuanVal = document.getElementById('siteTujuan').value;
+
+                if (boxVal === 'Lainnya') {
+                    boxVal = document.getElementById('boxLainnya').value.trim();
+                    if (!boxVal) {
+                        alert("PERHATIAN: Nama Box (Lainnya) wajib diisi jika Anda memilih opsi Lainnya!");
+                        document.getElementById('boxLainnya').focus();
+                        return;
+                    }
+                }
 
                 if (!pelaksanaVal) {
                     alert("PERHATIAN: Nama Pelaksana wajib diisi!");
@@ -582,6 +699,11 @@
                 if (!alokasiVal) {
                     alert("PERHATIAN: Alokasi Part / Konteiner wajib dipilih!");
                     document.getElementById('alokasiPart').focus();
+                    return;
+                }
+                if (!siteTujuanVal) {
+                    alert("PERHATIAN: Site Tujuan wajib dipilih!");
+                    document.getElementById('siteTujuan').focus();
                     return;
                 }
 
@@ -635,7 +757,8 @@
                         Aktual: dataItem.aktual,
                         Selisih: dataItem.selisih,
                         Box: boxVal,
-                        Alokasi: alokasiVal, 
+                        Alokasi: alokasiVal,
+                        SiteTujuan: siteTujuanVal, 
                         Catatan: catatanVal, 
                         Foto: currentPhotoUrl ? currentPhotoUrl : 'Tidak'
                     };
@@ -652,13 +775,13 @@
 
                 await Promise.all(fetchPromises);
                 
-                fetchHistoryData();
+                fetchHistoryData(); // Update history setelah simpan berhasil
                 showModal();
                 restoreButton(btnSimpan, originalBtnHtml);
 
             } catch (err) {
                 console.error("Terjadi error sistem:", err);
-                alert("GAGAL MENYIMPAN: Mohon cek koneksi internet Anda atau coba lagi beberapa saat. (" + err.message + ")");
+                alert("GAGAL MENYIMPAN: Mohon cek koneksi internet Anda atau coba lagi beberapa saat.");
                 restoreButton(btnSimpan, '<i class="ph ph-floppy-disk text-lg"></i> Simpan Data');
             }
         });
@@ -676,12 +799,18 @@
             previewContainer.classList.add('hidden');
             actionButtonsFoto.classList.remove('hidden');
             
+            const boxLainnya = document.getElementById('boxLainnya');
+            if (boxLainnya) {
+                boxLainnya.classList.add('hidden');
+                boxLainnya.value = '';
+            }
+            
             const matchContainer = document.getElementById('matchSelectionContainer');
             if (matchContainer) matchContainer.classList.add('hidden');
             const icon = document.getElementById('materialStatusIcon');
             const helpText = document.getElementById('materialHelp');
             if(icon) icon.innerHTML = '<i class="ph ph-magnifying-glass text-slate-400"></i>';
-            if(helpText) helpText.innerHTML = "Ketik ID / Nama lalu tekan Cari, atau biarkan kosong untuk lihat semua.";
+            if(helpText) helpText.innerHTML = "Ketik ID / Nama / Mfr Part / Storage Bin lalu tekan Cari, atau kosongkan untuk semua.";
         }
 
         function showModal() {
@@ -701,6 +830,7 @@
             }, 300);
         }
 
+        // FUNGSI RENDER TAMPILAN RIWAYAT
         function renderHistory() {
             const tbody = document.getElementById('historyTableBody');
             const countEl = document.getElementById('historyCount');
@@ -722,7 +852,7 @@
             countEl.textContent = `${filteredHistory.length} Data`;
             
             if (filteredHistory.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-slate-400 text-sm">Belum ada data di server atau tidak ada yang cocok dengan filter.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-slate-400 text-sm">Belum ada data di server atau tidak ada yang cocok.</td></tr>';
                 return;
             }
             
@@ -736,7 +866,7 @@
                 else if (item.selisih > 0) selisihClass = 'text-green-600 font-medium';
 
                 tr.innerHTML = `
-                    <td class="py-3 px-6 whitespace-nowrap text-xs text-slate-500">${item.waktu}</td>
+                    <td class="py-3 px-6 whitespace-nowrap text-xs font-semibold text-slate-500">${item.waktu}</td>
                     <td class="py-3 px-6">
                         <div class="font-medium text-slate-800 text-sm">${item.material}</div>
                         <div class="text-[10px] text-slate-500 truncate max-w-[200px]" title="${item.desc}">${item.desc}</div>
