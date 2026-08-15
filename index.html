@@ -342,7 +342,7 @@
         let sessionHistory = []; 
         
         // Link Apps Script terbaru
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbxhKFNLli1Kd3eSDUHaUjaHvwHGGvRot8zmmvW1y9DxZjOt_e-6ID3_7cEdKJ7MzHA/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbyqmGlI4zRXXPqfeQYJhEBQLamXwYY0VpZ4aHUCk8kRQzH3peCs9wMMJFaRrNR8dmNW/exec";
 
         // Element Referensi
         const form = document.getElementById('inspeksiForm');
@@ -482,7 +482,7 @@
         
         function fetchSheetData() {
             // MB52 Database 
-            const sheetUrl = "https://docs.google.com/spreadsheets/d/1ctGlztu9MfUX28P_I1MGmk8QYdu7UORHxQ8C-h0WZ6k/gviz/tq?tqx=out:csv&gid=86846704&t=" + new Date().getTime();
+            const sheetUrl = "https://docs.google.com/spreadsheets/d/1ctGlztu9MfUX28P_I1MGmk8QYdu7UORHxQ8C-h0WZ6k/export?format=csv&gid=86846704&t=" + new Date().getTime();
             const statusHelp = document.getElementById('materialHelp');
             
             statusHelp.innerHTML = "<span class='text-amber-500 flex items-center gap-1'><i class='ph ph-spinner-gap animate-spin'></i> Memuat database MB52...</span>";
