@@ -342,7 +342,7 @@
         let sessionHistory = []; 
         
         // Link Apps Script terbaru
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbyqmGlI4zRXXPqfeQYJhEBQLamXwYY0VpZ4aHUCk8kRQzH3peCs9wMMJFaRrNR8dmNW/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbyPS2MOy-s0rbdHi9PU1FffGqKvMfzkSbOaL9coBMwlPkGyMFJot5msKZCHWpOvH3lQ/exec";
 
         // Element Referensi
         const form = document.getElementById('inspeksiForm');
@@ -487,23 +487,34 @@
             
             statusHelp.innerHTML = "<span class='text-amber-500 flex items-center gap-1'><i class='ph ph-spinner-gap animate-spin'></i> Memuat database MB52...</span>";
 
-            Papa.parse(sheetUrl, {
-                download: true,
-                header: true,
-                skipEmptyLines: true,
-                complete: function(results) {
-                    sheetData = results.data.filter(row => {
-                        const qtyRaw = (row['Unrestricted'] || row['Unrestricted Use'] || row['Unrestricted-Use'] || row['Qty'] || '0').toString().replace(/,/g, '');
-                        const qty = parseFloat(qtyRaw) || 0;
-                        return qty > 0; 
+            // Menggunakan Fetch API dengan parameter cache dan header untuk browser HP
+            fetch(sheetUrl, { method: 'GET', mode: 'cors', cache: 'no-store', headers: { 'Accept': 'text/csv' } })
+                .then(response => {
+                    if (!response.ok) throw new Error("Gagal mengambil data dari server");
+                    return response.text();
+                })
+                .then(csvText => {
+                    Papa.parse(csvText, {
+                        header: true,
+                        skipEmptyLines: true,
+                        complete: function(results) {
+                            sheetData = results.data.filter(row => {
+                                const qtyRaw = (row['Unrestricted'] || row['Unrestricted Use'] || row['Unrestricted-Use'] || row['Qty'] || '0').toString().replace(/,/g, '');
+                                const qty = parseFloat(qtyRaw) || 0;
+                                return qty > 0; 
+                            });
+                            statusHelp.innerHTML = `<span class='text-green-600 flex items-center gap-1'><i class='ph ph-check'></i> Database siap (${sheetData.length} item dg SOH). Ketik parameter & tekan Cari.</span>`;
+                        },
+                        error: function(err) {
+                            console.error("Error parsing CSV:", err);
+                            statusHelp.innerHTML = "<span class='text-red-500 flex items-center gap-1'><i class='ph ph-warning'></i> Format data salah.</span>";
+                        }
                     });
-                    statusHelp.innerHTML = `<span class='text-green-600 flex items-center gap-1'><i class='ph ph-check'></i> Database siap (${sheetData.length} item dg SOH). Ketik parameter & tekan Cari.</span>`;
-                },
-                error: function(err) {
-                    console.error("Error parsing CSV:", err);
-                    statusHelp.innerHTML = "<span class='text-red-500 flex items-center gap-1'><i class='ph ph-warning'></i> Gagal memuat database.</span>";
-                }
-            });
+                })
+                .catch(err => {
+                    console.error("Fetch error:", err);
+                    statusHelp.innerHTML = "<span class='text-red-500 flex items-center gap-1'><i class='ph ph-warning'></i> Akses Ditolak! Ubah Share Spreadsheet ke 'Siapa saja yang memiliki link'.</span>";
+                });
         }
 
         // FUNGSI MEMBACA RIWAYAT (Beserta perbaikan deteksi kolom Waktu otomatis)
@@ -516,59 +527,72 @@
                 tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-slate-500 text-sm"><div class="flex flex-col items-center justify-center gap-2"><i class="ph ph-spinner-gap animate-spin text-2xl text-brand-500"></i> Memuat riwayat dari server...</div></td></tr>';
             }
 
-            Papa.parse(historyUrl, {
-                download: true,
-                header: true,
-                skipEmptyLines: true,
-                complete: function(results) {
-                    sessionHistory = results.data.map(row => {
-                        // FIX WAKTU: Baca otomatis dari kolom manapun yang mengandung Waktu, Timestamp, atau ambil kolom A langsung
-                        const keys = Object.keys(row);
-                        let waktuDitemukan = '-';
-                        
-                        // Try exact matches first (case-insensitive if possible, but object keys are case-sensitive)
-                        if (row['Tanggal/Jam']) {
-                            waktuDitemukan = row['Tanggal/Jam'];
-                        } else if (row['Waktu']) {
-                            waktuDitemukan = row['Waktu'];
-                        } else if (row['Timestamp']) {
-                            waktuDitemukan = row['Timestamp'];
-                        } else {
-                            // If not found, look for any key that contains "waktu" or "timestamp" ignoring case
-                            const timeKey = keys.find(k => k.toLowerCase().includes('tanggal/jam') || k.toLowerCase().includes('waktu') || k.toLowerCase().includes('timestamp') || k.toLowerCase().includes('date'));
-                            if (timeKey && row[timeKey]) {
-                                waktuDitemukan = row[timeKey];
-                            } else if (keys.length > 0) {
-                                // Backup: Paksa ambil data dari urutan kolom paling pertama (Kolom A)
-                                waktuDitemukan = row[keys[0]];
+            // Menggunakan Fetch API dengan parameter cache dan header untuk browser HP
+            fetch(historyUrl, { method: 'GET', mode: 'cors', cache: 'no-store', headers: { 'Accept': 'text/csv' } })
+                .then(response => {
+                    if (!response.ok) throw new Error("Gagal mengambil data dari server");
+                    return response.text();
+                })
+                .then(csvText => {
+                    Papa.parse(csvText, {
+                        header: true,
+                        skipEmptyLines: true,
+                        complete: function(results) {
+                            sessionHistory = results.data.map(row => {
+                                // FIX WAKTU: Baca otomatis dari kolom manapun yang mengandung Waktu, Timestamp, atau ambil kolom A langsung
+                                const keys = Object.keys(row);
+                                let waktuDitemukan = '-';
+                                
+                                // Try exact matches first (case-insensitive if possible, but object keys are case-sensitive)
+                                if (row['Tanggal/Jam']) {
+                                    waktuDitemukan = row['Tanggal/Jam'];
+                                } else if (row['Waktu']) {
+                                    waktuDitemukan = row['Waktu'];
+                                } else if (row['Timestamp']) {
+                                    waktuDitemukan = row['Timestamp'];
+                                } else {
+                                    // If not found, look for any key that contains "waktu" or "timestamp" ignoring case
+                                    const timeKey = keys.find(k => k.toLowerCase().includes('tanggal/jam') || k.toLowerCase().includes('waktu') || k.toLowerCase().includes('timestamp') || k.toLowerCase().includes('date'));
+                                    if (timeKey && row[timeKey]) {
+                                        waktuDitemukan = row[timeKey];
+                                    } else if (keys.length > 0) {
+                                        // Backup: Paksa ambil data dari urutan kolom paling pertama (Kolom A)
+                                        waktuDitemukan = row[keys[0]];
+                                    }
+                                }
+
+                                // Menggunakan fallback yang lebih kuat jika Waktu/Timestamp tidak ditemukan di header spesifik
+                                if (waktuDitemukan === '-') {
+                                   waktuDitemukan = row['Tanggal/Jam'] || row['Waktu'] || row['Timestamp'] || row[keys[0]] || '-';
+                                }
+
+                                return {
+                                    waktu: waktuDitemukan,
+                                    material: row['Material'] || '-',
+                                    desc: row['Deskripsi Material'] || row['Deskripsi'] || row['Material Description'] || '-',
+                                    mfrPart: row['Mfr Part Number'] || row['Mfr Part'] || '-',
+                                    unrestricted: row['Unrestricted'] || 0,
+                                    aktual: row['Aktual'] || 0,
+                                    selisih: parseFloat(row['Selisih'] || 0)
+                                };
+                            }).reverse().slice(0, 10); 
+                            
+                            renderHistory();
+                        },
+                        error: function(err) {
+                            console.error("Error parsing history CSV:", err);
+                            if (tbody) {
+                                tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-red-500 text-sm"><i class="ph ph-warning"></i> Gagal membaca data riwayat.</td></tr>';
                             }
                         }
-
-                        // Menggunakan fallback yang lebih kuat jika Waktu/Timestamp tidak ditemukan di header spesifik
-                        if (waktuDitemukan === '-') {
-                           waktuDitemukan = row['Tanggal/Jam'] || row['Waktu'] || row['Timestamp'] || row[keys[0]] || '-';
-                        }
-
-                        return {
-                            waktu: waktuDitemukan,
-                            material: row['Material'] || '-',
-                            desc: row['Deskripsi Material'] || row['Deskripsi'] || row['Material Description'] || '-',
-                            mfrPart: row['Mfr Part Number'] || row['Mfr Part'] || '-',
-                            unrestricted: row['Unrestricted'] || 0,
-                            aktual: row['Aktual'] || 0,
-                            selisih: parseFloat(row['Selisih'] || 0)
-                        };
-                    }).reverse().slice(0, 10); 
-                    
-                    renderHistory();
-                },
-                error: function(err) {
-                    console.error("Error parsing history CSV:", err);
+                    });
+                })
+                .catch(err => {
+                    console.error("Error fetching history CSV:", err);
                     if (tbody) {
-                        tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-red-500 text-sm"><i class="ph ph-warning"></i> Gagal membaca data riwayat dari server.</td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-red-500 text-sm"><i class="ph ph-warning"></i> Akses Ditolak! Browser HP memblokir karena Spreadsheet masih Private. Ubah Share ke "Anyone with the link".</td></tr>';
                     }
-                }
-            });
+                });
         }
 
         const materialInput = document.getElementById('material');
