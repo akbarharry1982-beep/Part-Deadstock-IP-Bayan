@@ -302,7 +302,7 @@
                     <table class="w-full text-left text-sm text-slate-600">
                         <thead class="bg-white text-slate-500 border-b border-slate-100 text-xs uppercase tracking-wider">
                             <tr>
-                                <th class="py-3 px-6 font-medium">Waktu</th>
+                                <th class="py-3 px-6 font-medium">Tanggal/Jam</th>
                                 <th class="py-3 px-6 font-medium">Material</th>
                                 <th class="py-3 px-6 font-medium text-right">Sistem</th>
                                 <th class="py-3 px-6 font-medium text-right">Aktual</th>
@@ -342,7 +342,7 @@
         let sessionHistory = []; 
         
         // Link Apps Script terbaru
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbwF6_ThKNkuTt1XIsSGmMljPFt7-ZKo6RIzXJnspIdwXtzI0v20b2x8q9qcAXt0u9ce/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbz3SULoJtYQazq_ATjUlMA8RRqIAmiEqg4xrTiW7M6LsB94WKSYcRuzzPJYPkxW2mIE/exec";
 
         // Element Referensi
         const form = document.getElementById('inspeksiForm');
@@ -508,7 +508,8 @@
 
         // FUNGSI MEMBACA RIWAYAT (Beserta perbaikan deteksi kolom Waktu otomatis)
         function fetchHistoryData() {
-            const historyUrl = "https://docs.google.com/spreadsheets/d/1ctGlztu9MfUX28P_I1MGmk8QYdu7UORHxQ8C-h0WZ6k/gviz/tq?tqx=out:csv&sheet=INSPEKSI&t=" + new Date().getTime();
+            // Menggunakan endpoint export CSV mentah berdasarkan gid=0 agar tidak ada data campuran yang terpotong oleh sistem Google
+            const historyUrl = "https://docs.google.com/spreadsheets/d/1ctGlztu9MfUX28P_I1MGmk8QYdu7UORHxQ8C-h0WZ6k/export?format=csv&gid=0&t=" + new Date().getTime();
             const tbody = document.getElementById('historyTableBody');
             
             if (tbody) {
@@ -524,13 +525,28 @@
                         // FIX WAKTU: Baca otomatis dari kolom manapun yang mengandung Waktu, Timestamp, atau ambil kolom A langsung
                         const keys = Object.keys(row);
                         let waktuDitemukan = '-';
-                        if (row['Waktu']) {
+                        
+                        // Try exact matches first (case-insensitive if possible, but object keys are case-sensitive)
+                        if (row['Tanggal/Jam']) {
+                            waktuDitemukan = row['Tanggal/Jam'];
+                        } else if (row['Waktu']) {
                             waktuDitemukan = row['Waktu'];
                         } else if (row['Timestamp']) {
                             waktuDitemukan = row['Timestamp'];
-                        } else if (keys.length > 0) {
-                            // Backup: Paksa ambil data dari urutan kolom paling pertama (Kolom A)
-                            waktuDitemukan = row[keys[0]];
+                        } else {
+                            // If not found, look for any key that contains "waktu" or "timestamp" ignoring case
+                            const timeKey = keys.find(k => k.toLowerCase().includes('tanggal/jam') || k.toLowerCase().includes('waktu') || k.toLowerCase().includes('timestamp') || k.toLowerCase().includes('date'));
+                            if (timeKey && row[timeKey]) {
+                                waktuDitemukan = row[timeKey];
+                            } else if (keys.length > 0) {
+                                // Backup: Paksa ambil data dari urutan kolom paling pertama (Kolom A)
+                                waktuDitemukan = row[keys[0]];
+                            }
+                        }
+
+                        // Menggunakan fallback yang lebih kuat jika Waktu/Timestamp tidak ditemukan di header spesifik
+                        if (waktuDitemukan === '-') {
+                           waktuDitemukan = row['Tanggal/Jam'] || row['Waktu'] || row['Timestamp'] || row[keys[0]] || '-';
                         }
 
                         return {
@@ -542,7 +558,7 @@
                             aktual: row['Aktual'] || 0,
                             selisih: parseFloat(row['Selisih'] || 0)
                         };
-                    }).reverse().slice(0, 100); 
+                    }).reverse(); 
                     
                     renderHistory();
                 },
