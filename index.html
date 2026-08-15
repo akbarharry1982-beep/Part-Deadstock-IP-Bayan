@@ -342,7 +342,7 @@
         let sessionHistory = []; 
         
         // Link Apps Script terbaru
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbz3SULoJtYQazq_ATjUlMA8RRqIAmiEqg4xrTiW7M6LsB94WKSYcRuzzPJYPkxW2mIE/exec";
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbxhKFNLli1Kd3eSDUHaUjaHvwHGGvRot8zmmvW1y9DxZjOt_e-6ID3_7cEdKJ7MzHA/exec";
 
         // Element Referensi
         const form = document.getElementById('inspeksiForm');
@@ -558,7 +558,7 @@
                             aktual: row['Aktual'] || 0,
                             selisih: parseFloat(row['Selisih'] || 0)
                         };
-                    }).reverse(); 
+                    }).reverse().slice(0, 10); 
                     
                     renderHistory();
                 },
